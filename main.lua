@@ -191,6 +191,21 @@ function Executive:removeTag(object,tag)
 	index.count = index.count - 1 																-- decrement the number of items in the index.
 end
 
+--//%	Fire a method on an individual object or a query result (Object List)
+--//	@object 	[object/string]	Object to call function/method on or a query.
+--//	@method 	[string/func]	Name of method or function to call.
+--//	@return 	true 			Methods all fired successfully.
+
+function Executive:process(object,method,...)
+	if type(object) == "table" then return self:fire(object,method,...) end  					-- if just an object, then fire it on its own.
+	local ok = true 
+	local queryResult = self:query(object) 														-- evaluate the query. 
+	for _,ref in pairs(queryResult.objects) do 													-- work through all the results.
+		ok = ok and self:fire(ref,method,...) 													-- fire a method, set ok false if fails
+	end 
+	return ok 																					-- return success.
+end 
+
 --//%	Fire a method (either function or name) on given object. Also passes any following parameters to the call.
 --//	@object 	[object]		Object to call function/method on 
 --//	@method 	[string/func]	Name of method or function to call.
@@ -212,6 +227,8 @@ end
 --//	@return 		[objectlist]	table with 2 values, dictionary of objects => objects and count of hits.
 
 function Executive:query(tagList)
+	tagList = (tagList or ""):lower():gsub("%s","") 											-- make lower case, remove spaces.
+	tagList = self:split(tagList) 																-- split around commas.
 	if #tagList == 0 then  																		-- if nothing, then return the whole object list.
 		return self.m_objects
 	end 
@@ -325,9 +342,47 @@ end
 --//	@return 		[objectlist]	table with 2 values, dictionary of objects => objects and count of hits.
 
 function ExecutiveBaseClass:query(tagList) 
-	tagList = (tagList or ""):lower():gsub("%s","") 											-- make lower case, remove spaces.
-	tagList = self.m_executive:split(tagList) 													-- split around commas.
 	return self.m_executive:query(tagList) 														-- and run the query.
+end 
+
+--//	Fire a timer a specific number of times (including until stopped.)
+--//	@delay 			[number]		Timer delay in milliseconds.
+--//	@repeatCount 	[number]		Number of repeats (1 +, -1 = continuous)
+--//	@tag 			[string]		Identifying tag for timer (optional)
+--//	@target 		[object] 		Object to receive timer (defaults to self)
+--//	@return 		[number]		Timer ID
+
+function ExecutiveBaseClass:addTimer(delay,repeatCount,tag,target)
+	return self.m_executive:addTimer(delay,repeatCount,tag or "",target or self)
+end 
+
+--//	Fire a timer once only.
+--//	@delay 			[number]		Timer delay in milliseconds.
+--//	@tag 			[string]		Identifying tag for timer (optional)
+--//	@target 		[object] 		Object to receive timer (defaults to self)
+--//	@return 		[number]		Timer ID
+
+function ExecutiveBaseClass:addSingleTimer(delay,tag,target)
+	return self:addTimer(delay,1,tag,target)
+end 
+
+--//	Fire a timer continuously until stopped.
+--//	@delay 			[number]		Timer delay in milliseconds.
+--//	@tag 			[string]		Identifying tag for timer (optional)
+--//	@target 		[object] 		Object to receive timer (defaults to self)
+--//	@return 		[number]		Timer ID
+
+function ExecutiveBaseClass:addRepeatingTimer(delay,tag,target)
+	return self:addTimer(delay,-1,tag,target)
+end 
+
+--//	Send a message after a possible delay.
+--//	@target 		[query/object]	Object or query to send the message to.
+--//	@contents 		[table]			Message contents.
+--//	@delay 			[number] 		Message delay time in milliseconds (defaults to immediately)
+
+function ExecutiveBaseClass:sendMessage(target,contents,delay)
+	self.m_executive:queueMessage(target,self,contents or {},delay or -1)
 end 
 
 --- ************************************************************************************************************************************************************************
@@ -356,6 +411,9 @@ o1:tag("+update,+z,q,a")
 o2:tag("+update,+b")
 o3:tag("+update,+b")
 
+q1 = x:query("update,b")
+print(q1.count)
+print(x:process("update,q,b",function(s) print(s,s.data) end))
 x:delete()
 
 -- Timer code.
