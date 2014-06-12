@@ -19,10 +19,12 @@ end
 
 local objectCount = 50 																			-- Number of objects.
 local tagCount = 100 																			-- Number of tags
+local queryMaxSize = 5 																			-- Max query size.
 
 local objects = {} 																				-- Object references.
 local tagNames = {}
 local tagUsage = {} 																			-- Tag Number => [Number => boolean]
+local queryParts = {} 																			-- keep a list of the tags used in a query.
 
 function checkTagCorrect(objectID)
 	for tagID = 1,tagCount do 																	-- for each tag.
@@ -35,6 +37,23 @@ function checkTagCorrect(objectID)
 	end 
 end
 
+function checkQueryResult(result,c) 
+	local passCount = 0
+	for objID = 1,objectCount do 																-- check result for every object.
+		local matches = true  																	-- work through each part
+		for i = 1,#queryParts do 
+			matches = matches and tagUsage[queryParts[i]][objID] 								-- check tag present for all.
+		end 
+		if matches then  																		-- if matches
+			assert(result.objects[objects[objID]] ~= nil) 										-- check in result
+			passCount = passCount + 1 															-- bump count
+		end 
+
+	end 
+	assert(passCount == result.count)															-- check result sizes match.
+end 
+
+
 math.randomseed(57) 																			-- preseed randomiser.
 
 for i = 1,objectCount do  																		-- create untagged objects.
@@ -46,9 +65,9 @@ for i = 1,tagCount do 																			-- create tag names
 	for j = 1,objectCount do tagUsage[i][j] = false end 
 end 
 
-for i = 1,10*100 do 
+for c = 1,1000*100 do 
 
-	if i % 1000 == 0 then print(i) end 
+	if c % 1000 == 0 then print(c) end 
 
 	local objID = math.random(1,objectCount) 													-- change this object
 	local tagID = math.random(1,tagCount)  														-- and this tag. 
@@ -64,6 +83,17 @@ for i = 1,10*100 do
 	for i = 1,objectCount do 																	-- for all objects
 		checkTagCorrect(i) 																		-- check the tags are correct.
 	end
+
+	local query = ""
+	queryParts = {}
+	for i = 1,math.random(1,queryMaxSize) do 													-- build up a query.
+		local tag = math.random(1,tagCount)														-- this tag is part of it.
+		queryParts[i] = tag 																	-- save the tag number.
+		if query ~= "" then query = query .. "," end 
+		query = query .. tagNames[tag]
+	end 
+	local qr = objects[1]:query(query) 															-- evaluate the query
+	checkQueryResult(qr,c)
 end
 
 exec:delete()

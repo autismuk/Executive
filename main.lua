@@ -207,6 +207,42 @@ function Executive:fire(object,method,...)
 	return true
 end 
 
+--//	Query the object database for all objects with all the listed tags.
+--//	@tagList 		[table] 		table of tags/strings which are required to be all satisfied.
+--//	@return 		[objectlist]	table with 2 values, dictionary of objects => objects and count of hits.
+
+function Executive:query(tagList)
+	if #tagList == 0 then  																		-- if nothing, then return the whole object list.
+		return self.m_objects
+	end 
+	if #tagList == 1 then 																		-- if one single index value.
+		local index = self.m_indices[tagList[1]] 												-- examine the index
+		if index == nil then index = { objects = {}, count = 0 } end 							-- if index is empty, then there are no matches
+		return index 
+	end
+	local result = { objects = {}, count = 0 }													-- empty result
+	local tags = {}
+	for i = 1,#tagList do 																		-- check there is an index for every tag
+		tags[i] = self.m_indices[tagList[i]] 													-- put the index in tags[i]
+		if tags[i] == nil then return result end 												-- if not, then return the empty result as there can be no matches
+	end
+	table.sort(tags,function(a,b) return a.count < b.count end) 								-- sort so the smallest index is first, which speeds it up.
+	for _,ref in pairs(tags[1].objects) do 														-- work through all objects at the outermost level.
+		local isOk = true 																		-- can it be added.
+		for j = 2,#tags do 																		-- check all the inner levels.
+			if tags[j].objects[ref] == nil then 												-- if object not in that tag index
+				isOk = false 																	-- it is not a match
+				break 																			-- break out of the for loop.
+			end
+		end
+		if isOk then 																			-- match
+			result.count = result.count + 1 													-- bump count
+			result.objects[ref] = ref 															-- store object in object list 
+		end 
+	end
+	return result 																				-- return the result set.
+end 
+
 --//%	String split around commas, utility function.
 --//	@s 		[string]			string to split around commas
 --//	@return [table]				array of strings.
@@ -284,6 +320,18 @@ function ExecutiveBaseClass:tag(tagChanges)
 	end
 end 
 
+--//	Query the object database for all objects with all the listed tags.
+--//	@tagList 		[string] 		list of tags, seperated by commas.
+--//	@return 		[objectlist]	table with 2 values, dictionary of objects => objects and count of hits.
+
+function ExecutiveBaseClass:query(tagList) 
+	tagList = (tagList or ""):lower():gsub("%s","") 											-- make lower case, remove spaces.
+	tagList = self.m_executive:split(tagList) 													-- split around commas.
+	return self.m_executive:query(tagList) 														-- and run the query.
+end 
+
+--- ************************************************************************************************************************************************************************
+
 local x = Executive:new()
 print(x)
 c1 = x:createClass()
@@ -302,16 +350,15 @@ end
 
 o1 = c1:new(32)
 o2 = c1:new(132)
+o3 = c1:new(232)
 
-o1:tag("+update")
-o2:tag("+update")
+o1:tag("+update,+z,q,a")
+o2:tag("+update,+b")
+o3:tag("+update,+b")
 
 x:delete()
 
--- Bully test.
--- Query code.
 -- Timer code.
 -- Messaging code.
 
-_G.Executive = Executive
-require("bully")
+--_G.Executive = Executive require("bully")
