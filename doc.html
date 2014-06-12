@@ -1,0 +1,63 @@
+<!DOCTYPE html><html><head><style>body { background:#333; color:#0F0; font-family:Arial,Verdana;} a { color:#0AA } h1 { color:#FF0; } h2 { color:#0FF } table,tr,td { color: #CCC; padding:4px;border:1px solid white; border-collapse:collapse; }</style></head><body>
+<a name="Executive"></a>
+<hr><h1>Executive</h1>
+<p><h3>Extends Base</h3></p>
+<p>The Executive Class is the main controller and storage system for objects. It also coordinates updates, timers and asynchronous messaging, which are built in. It uses ObjectLists regularly, which are a table consisting of a count, and a has of objects keyed on references.</p>
+<p>Methods : <a href="#Executive_addMixinObject"/>addMixinObject</a>,<a href="#Executive_createClass"/>createClass</a></p><hr><a name="Executive_(constructor)"></a>
+<a name="Executive_addMixinObject"></a>
+<h2>addMixinObject(object)</h2>
+<table>
+<tr><td>object</td><td>object</td><td>Mixin object to be decorated.</td></tr>
+</table>
+<p>Add a mixin object to the system. Some objects may be created by modifying other classes via decoration, these will not inherit either the executive member or the member functions. This method decorates the mixin with both. Do not use this with game objects, which are added automatically by the constructor.</p>
+<a name="Executive_addTag"></a>
+<a name="Executive_attach"></a>
+<a name="Executive_createClass"></a>
+<h2>createClass()</h2>
+<table>
+<tr><td>return</td><td>object</td><td>Prototype for modification to produce a class/prototype</td></tr>
+</table>
+<p>This creates a class which can be used as a prototype - it is a replacement for the new() method. It returns an instance of the ExecutiveBaseClass to be modified, but this instance already has a reference to the executive instance so it can access it.</p>
+<a name="Executive_decorateMixinObject"></a>
+<a name="Executive_delete"></a>
+<a name="Executive_detach"></a>
+<a name="Executive_enterFrame"></a>
+<a name="Executive_fire"></a>
+<a name="Executive_isGameObjectSubclass"></a>
+<a name="Executive_removeTag"></a>
+<a name="Executive_split"></a>
+<a name="Executive_tableSize"></a>
+<a name="ExecutiveBaseClass"></a>
+<hr><h1>ExecutiveBaseClass</h1>
+<p><h3>Extends Base</h3></p>
+<p></p>
+<p>Methods : <a href="#ExecutiveBaseClass_constructor"/>constructor</a>,<a href="#ExecutiveBaseClass_delete"/>delete</a>,<a href="#ExecutiveBaseClass_destructor"/>destructor</a>,<a href="#ExecutiveBaseClass_isAlive"/>isAlive</a>,<a href="#ExecutiveBaseClass_tag"/>tag</a></p><hr><a name="ExecutiveBaseClass_(constructor)"></a>
+<a name="ExecutiveBaseClass_constructor"></a>
+<h2>constructor(data)</h2>
+<table>
+<tr><td>data</td><td>table</td><td>Data for constructor</td></tr>
+</table>
+<p>Constructor for game object. In the base object this is a dummy.</p>
+<a name="ExecutiveBaseClass_delete"></a>
+<h2>delete()</h2>
+<p>Delete object from game. This calls the destructor and disconnects the object from the executive</p>
+<a name="ExecutiveBaseClass_destructor"></a>
+<h2>destructor()</h2>
+<p>Destructor for game object. In the base object this is a dummy.</p>
+<a name="ExecutiveBaseClass_isAlive"></a>
+<h2>isAlive()</h2>
+<table>
+<tr><td>return</td><td>boolean</td><td>true if object is still alive.</td></tr>
+</table>
+<p>Check to see if an object is still alive.</p>
+<a name="ExecutiveBaseClass_tag"></a>
+<h2>tag(tagChanges)</h2>
+<table>
+<tr><td>tagChanges</td><td>string</td><td>tags to add and remove from an object.</td></tr>
+</table>
+<p>Add or remove tags from an object. The parameter is a sequence of tags, seperated by commas, that may be prefixed by '+' or '-' to add or remove a tag. The default is to add.</p>
+<a name="Object"></a>
+<hr><h1>Object</h1>
+<p><h3>Extends ExecutiveBaseClass</h3></p>
+<p></p>
+<p>Methods : <a href="#ExecutiveBaseClass_constructor"/><i>constructor</i></a>,<a href="#ExecutiveBaseClass_delete"/><i>delete</i></a>,<a href="#ExecutiveBaseClass_destructor"/><i>destructor</i></a>,<a href="#ExecutiveBaseClass_isAlive"/><i>isAlive</i></a>,<a href="#ExecutiveBaseClass_tag"/><i>tag</i></a></p><hr><hr><p><i>LUA Autodoc by Paul Robson 2014</i></p><hr></body></html>

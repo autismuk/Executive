@@ -68,7 +68,15 @@ end
 --//	@eventData [table]			Event data.
 
 function Executive:enterFrame(eventData) 
-	-- TODO: Process updates
+	local updates = self.m_indices.update 														-- get the updateables list
+	if updates.count > 0 then  																	-- are there some updates ?
+		local current = system.getTimer() 														-- get system time
+		local elapsed = math.min(current - (self.m_lastFrame or 0),100) 						-- get elapsed time in ms, max 100.
+		self.m_lastFrame = current 																-- update last frame time
+		for _,ref in pairs(updates.objects) do 													-- then fire all the updates.
+			self:fire(ref,"onUpdate",elapsed/1000,elapsed)  									-- with deltatime/deltaMS
+		end 
+	end 
 	-- TODO: Process timers
 	-- TODO: Process messages
 end 
@@ -105,7 +113,6 @@ function Executive:attach(object,data)
 	if not self:isGameObjectSubclass(object) then 												-- is this a mixin, e.g. not created by subclassing the Base class ?
 		self:decorateMixinObject(object) 														-- if so, decorate it with useful methods.
 	end
-	-- TODO: Promote constructors/destructors to top level ?
 	if object.constructor ~= nil then 															-- is there a constructor ?
 		object.constructor(object,data or {}) 													-- then call it 
 	end
@@ -184,6 +191,38 @@ function Executive:removeTag(object,tag)
 	index.count = index.count - 1 																-- decrement the number of items in the index.
 end
 
+--//%	Fire a method (either function or name) on given object. Also passes any following parameters to the call.
+--//	@object 	[object]		Object to call function/method on 
+--//	@method 	[string/func]	Name of method or function to call.
+--//	@return 	true 			Method fired successfully.
+
+function Executive:fire(object,method,...)
+	if not object:isAlive() then return false end  												-- return false if object dead
+	if type(method) == "function" then 
+		method(object,...)
+	else 
+		assert(object[method] ~= nil,"Object does not have method "..method)
+		object[method](object,...)
+	end
+	return true
+end 
+
+--//%	String split around commas, utility function.
+--//	@s 		[string]			string to split around commas
+--//	@return [table]				array of strings.
+
+function Executive:split(s)
+	if s == "" then return {} end 																-- empty string.
+	local result = {}																			-- put the result here.
+	while s:find(",") ~= nil do 																-- while there is something to split.
+		local n = s:find(",") 																	-- find split point
+		result[#result+1] = s:sub(1,n-1) 														-- add before bit.
+		s = s:sub(n+1) 																			-- rest of split string
+	end 
+	result[#result+1] = s 																		-- add last one in
+	return result
+end 
+
 --- ************************************************************************************************************************************************************************
 --	This is the base class of game objects that are not created via a mixin. Most of the functionality is passed on to helper functions in the Executive Class, this
 --	serves as a base for game objects so they inherit the executive functionality automatically.
@@ -196,7 +235,7 @@ ExecutiveBaseClass = Base:new()
 --//	@data 	[table]			Data for actual constructor
 
 function ExecutiveBaseClass:initialise(data)
-	print("Instantiate",self,data,self.m_executive)
+	-- print("Instantiate",self,data,self.m_executive)
 	if data == nil then return end 																-- if used to prototype, don't initialise the object.
 	self.m_executive:attach(self,data) 															-- attach the object and call the constructor.
 end 
@@ -205,13 +244,13 @@ end
 --//	@data 	[table]			Data for constructor
 
 function ExecutiveBaseClass:constructor(data)
-	print("Constructor",self,data,self.m_executive)
+	-- print("Constructor",self,data,self.m_executive)
 end 
 
 --//	Destructor for game object. In the base object this is a dummy.
 
 function ExecutiveBaseClass:destructor()
-	print("Destructor",self,self.m_executive)
+	-- print("Destructor",self,self.m_executive)
 end 
 
 --//	Delete object from game. This calls the destructor and disconnects the object from the executive 
@@ -221,17 +260,58 @@ function ExecutiveBaseClass:delete()
 	self.m_executive:detach(self) 																-- process the detaching.
 end 
 
+--//	Check to see if an object is still alive.
+--//	@return 	[boolean]	true if object is still alive.
+
+function ExecutiveBaseClass:isAlive() 
+	return self.m_isAlive 
+end 
+
+--//	Add or remove tags from an object. The parameter is a sequence of tags, seperated by commas, that may be prefixed by '+' or '-' to
+--//	add or remove a tag. The default is to add.
+--//	@tagChanges 	[string] 		tags to add and remove from an object.
+
+function ExecutiveBaseClass:tag(tagChanges)
+	tagChanges = tagChanges:lower():gsub("%s","") 												-- make lower case, remove spaces.
+	tagChanges = self.m_executive:split(tagChanges) 											-- split around commas.
+	for _,tag in ipairs(tagChanges) do 															-- scan through them.
+		if tag:sub(1,1) == "+" then tag = tag:sub(2) end 										-- remove a leading +
+		if tag:sub(1,1) == "-" then 															-- if it is remove tag 
+			self.m_executive:removeTag(self,tag:sub(2))
+		else 																					-- otherwise add it.
+			self.m_executive:addTag(self,tag)
+		end 
+	end
+end 
+
 local x = Executive:new()
 print(x)
 c1 = x:createClass()
+
+function c1:constructor(data)
+	self.data = data 
+	print("Constructor",data)
+end 
+
+function c1:destructor()
+	print("Destructor")
+end 
+
+function c1:onUpdate(deltaTime,deltaMillisecs)
+end 
+
 o1 = c1:new(32)
 o2 = c1:new(132)
-x:addTag(o1,"demo")
-x:addTag(o1,"demo2")
-x:removeTag(o1,"demo")
-x:removeTag(o1,"demo2")
+
+o1:tag("+update")
+o2:tag("+update")
+
 x:delete()
 
--- Tags code.
--- Update code.
+-- Bully test.
+-- Query code.
+-- Timer code.
+-- Messaging code.
 
+_G.Executive = Executive
+require("bully")
