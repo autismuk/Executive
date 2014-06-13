@@ -29,7 +29,7 @@ function Executive:initialise()
 	self.m_objects = { objects = {}, count = 0 }												-- the objects member is initially empty, as there are no objects.
 	self.m_indices = {} 																		-- create an empty tag index structure (name => listObject)
 	self.m_indices["update"] = { objects = {}, count = 0 } 										-- create an 'update' index used for the enter frame update.
-	-- TODO: Create empty timer list
+	self.m_timerEvents = {} 																	-- empty table of timer events.
 	-- TODO: Create empty message list
 	Runtime:addEventListener("enterFrame",self) 												-- add the run time event listener.
 end
@@ -50,7 +50,7 @@ function Executive:delete()
 	end 
 	self.m_indices = nil 																		-- remove that reference
 	Runtime:removeEventListener("enterFrame",self) 												-- remove the event listener.
-	-- TODO: Remove timer list
+	self.m_timerEvents = nil 																	-- remove the timer event table.
 	-- TODO: Remove message list
 end
 
@@ -68,16 +68,28 @@ end
 --//	@eventData [table]			Event data.
 
 function Executive:enterFrame(eventData) 
+	local current = system.getTimer() 															-- get system time
 	local updates = self.m_indices.update 														-- get the updateables list
 	if updates.count > 0 then  																	-- are there some updates ?
-		local current = system.getTimer() 														-- get system time
 		local elapsed = math.min(current - (self.m_lastFrame or 0),100) 						-- get elapsed time in ms, max 100.
 		self.m_lastFrame = current 																-- update last frame time
 		for _,ref in pairs(updates.objects) do 													-- then fire all the updates.
 			self:fire(ref,"onUpdate",elapsed/1000,elapsed)  									-- with deltatime/deltaMS
 		end 
 	end 
-	-- TODO: Process timers
+	
+	while #self.m_timerEvents > 0 and self.m_timerEvents[1].time <= current do 					-- event available and fireable ?
+		local event = self.m_timerEvents[1] 													-- get the event.
+		self:fire(event.target,"onTimer",event.tag,event.id) 									-- fire the timer event.
+		event.count = math.max(event.count - 1,-1) 												-- reduce count, bottom out at minus 1.
+		if event.count == 0 then  																-- has it finished.
+			table.remove(self.m_timerEvents,1) 													-- then just throw it away.
+		else
+			event.time = current + event.delay 													-- update the next fire time
+			table.sort(self.m_timerEvents,function(a,b) return a.time < b.time end) 			-- sort the timer event table so the earliest ones are first.
+		end
+	end
+
 	-- TODO: Process messages
 end 
 
@@ -260,6 +272,41 @@ function Executive:query(tagList)
 	return result 																				-- return the result set.
 end 
 
+Executive.nextFreeTimerID = 1000 																-- static member, next free timer ID.
+
+--//%	Add a timer event.
+--//	@delay 			[number]			Milliseconds to delay
+--//	@repeatCount 	[number]			Number of times to fire before self cancel (-1 = indefinitely.)
+--//	@tag 			[string] 			Tag value to identify event, if required.
+--//	@target 		[object]			Object to send the event to.
+--//	@return 		[number]			internal ID of timer, can be used for cancellation.
+
+function Executive:addTimer(delay,repeatCount,tag,target)
+	local newEvent = { time = delay + system.getTimer(), count = repeatCount, delay = delay, 	-- create a new timer record.
+													tag = tag, target = target, id = Executive.nextFreeTimerID }
+	self.m_timerEvents[#self.m_timerEvents+1] = newEvent 										-- add event to timer events list
+	Executive.nextFreeTimerID = Executive.nextFreeTimerID + 1 									-- bump the next free timer ID
+	table.sort(self.m_timerEvents,function(a,b) return a.time < b.time end) 					-- sort the timer event table so the earliest ones are first.
+	return newEvent.id  																		-- return timer event ID.
+end
+
+--	local newEvent = { time = system.getTimer() + delay, count = repeatCount, 					-- create a new timer record.
+--								tag = tag, target = target, id = id or Executive.nextFreeTimerID }
+
+--//	Remove a timer with the given timer ID
+--//	@timerID 		[number]		ID of timer to remove 
+
+function Executive:removeTimer(timerID)
+	local n = 1 																				-- start at the beginning
+	while n <= #self.m_timerEvents do 															-- while not reached the end of timer events.
+		if self.m_timerEvents[n].id == timerID then 											-- found a matching event ID
+			table.remove(self.m_timerEvents,n) 													-- remove it
+		else 
+			n = n + 1 																			-- otherwise advance to next 
+		end 
+	end
+end
+
 --//%	String split around commas, utility function.
 --//	@s 		[string]			string to split around commas
 --//	@return [table]				array of strings.
@@ -376,6 +423,13 @@ function ExecutiveBaseClass:addRepeatingTimer(delay,tag,target)
 	return self:addTimer(delay,-1,tag,target)
 end 
 
+--//	Remove a timer with the given timer ID
+--//	@timerID 		[number]		ID of timer to remove 
+
+function ExecutiveBaseClass:removeTimer(timerID)
+	self.m_executive:removeTimer(timerID)
+end 
+
 --//	Send a message after a possible delay.
 --//	@target 		[query/object]	Object or query to send the message to.
 --//	@contents 		[table]			Message contents.
@@ -407,6 +461,7 @@ o1 = c1:new(32)
 o2 = c1:new(132)
 o3 = c1:new(232)
 
+
 o1:tag("+update,+z,q,a")
 o2:tag("+update,+b")
 o3:tag("+update,+b")
@@ -414,9 +469,17 @@ o3:tag("+update,+b")
 q1 = x:query("update,b")
 print(q1.count)
 print(x:process("update,q,b",function(s) print(s,s.data) end))
-x:delete()
+--x:delete()
 
--- Timer code.
+local r1 = o1:addRepeatingTimer(1000,"one")
+local r = o2:addTimer(500,8,"x8")
+o3:addSingleTimer(3000,"kill")
+
+function o1:onTimer(timerID,tag) print("o1",timerID,tag) end
+function o2:onTimer(timerID,tag) print("o2",timerID,tag) end
+function o3:onTimer(timerID,tag) print("o3",timerID,tag) self:removeTimer(r1) self:removeTimer(r) end
+
+-- Timer cancellation code.
 -- Messaging code.
 
 --_G.Executive = Executive require("bully")
