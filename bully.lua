@@ -10,6 +10,8 @@
 --- ************************************************************************************************************************************************************************
 --- ************************************************************************************************************************************************************************
 
+local Executive = require("system.executive")
+
 local exec = Executive:new() 																	-- create executive object 
 local WorkingClass = exec:createClass() 														-- create class for working with.
 
@@ -65,7 +67,7 @@ for i = 1,tagCount do 																			-- create tag names
 	for j = 1,objectCount do tagUsage[i][j] = false end 
 end 
 
-for c = 1,1000*100 do 
+for c = 1,1000*10 do 
 
 	if c % 1000 == 0 then print(c) end 
 

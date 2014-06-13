@@ -30,13 +30,17 @@ function Executive:initialise()
 	self.m_indices = {} 																		-- create an empty tag index structure (name => listObject)
 	self.m_indices["update"] = { objects = {}, count = 0 } 										-- create an 'update' index used for the enter frame update.
 	self.m_timerEvents = {} 																	-- empty table of timer events.
-	-- TODO: Create empty message list
+	self.m_messageQueue = {} 																	-- empty message queue
+	self.e = {} 																				-- reference store.
+	self.m_deleteAllRequested = false 															-- used to stop delete all in update
+	self.m_inUpdate = false
 	Runtime:addEventListener("enterFrame",self) 												-- add the run time event listener.
 end
 
 --//%	The Executive destructor deletes all objects, checks all indices and lists are clear, and removes the enterFrame listener.
 
 function Executive:delete()
+	if self.m_inUpdate then self.m_deleteAllRequested = true return end 						-- delay delete of everything if in update.
 	if self.m_objects == nil then return end 													-- exit if it has already been removed.
 	for _,ref in pairs(self.m_objects.objects) do 												-- work through all objects
 		ref:delete() 																			-- and delete them
@@ -51,7 +55,8 @@ function Executive:delete()
 	self.m_indices = nil 																		-- remove that reference
 	Runtime:removeEventListener("enterFrame",self) 												-- remove the event listener.
 	self.m_timerEvents = nil 																	-- remove the timer event table.
-	-- TODO: Remove message list
+	self.m_messageQueue = nil 																	-- remove the message queue
+	self.m_deleteAllRequested = nil self.m_inUpdate = nil self.e = nil 							-- tidy up.
 end
 
 --//%	Utility function which returns the number of items in a table
@@ -68,6 +73,7 @@ end
 --//	@eventData [table]			Event data.
 
 function Executive:enterFrame(eventData) 
+	self.m_inUpdate = true 																		-- in update - this blocks delete() 
 	local current = system.getTimer() 															-- get system time
 	local updates = self.m_indices.update 														-- get the updateables list
 	if updates.count > 0 then  																	-- are there some updates ?
@@ -90,15 +96,35 @@ function Executive:enterFrame(eventData)
 		end
 	end
 
-	-- TODO: Process messages
+	--local newMsg = { to = recipient, from = sender, 											-- create a new message
+	--							body = message, time = system.getTimer()+delayTime }
+
+	if #self.m_messageQueue > 0 then 															-- is there something in the message queue ?
+		local oldQueue = self.m_messageQueue 													-- make new reference to message queue
+		self.m_messageQueue = {} 																-- and empty the message queue.
+		for i = 1,#oldQueue do 																	-- work through the messages
+			if current >= oldQueue[i].time then 												-- has its send time been reached ?
+				self:process(oldQueue[i].to,"onMessage",oldQueue[i].from,oldQueue[i].body)
+			else  																				-- time not reached
+				self.m_messageQueue[#self.m_messageQueue+1] = oldQueue[i] 						-- so requeue it.
+			end 
+		end
+	end 
+
+	self.m_inUpdate = false 																	-- allow delete again.
+	if self.m_deleteAllRequested then 															-- delete executive if requested during update.
+		self:delete()
+	end 
 end 
 
 --//	This creates a class which can be used as a prototype - it is a replacement for the new() method. It returns an instance 
 --//	of the ExecutiveBaseClass to be modified, but this instance already has a reference to the executive instance so it can access it.
+--//	@baseClass 	[prototype]		Base class to extend from (can be ignored, defaults to ExecutiveBaseClass)
 --//	@return 	[object]		Prototype for modification to produce a class/prototype
 
-function Executive:createClass() 
-	local newObject = ExecutiveBaseClass:new() 													-- create a new class prototype
+function Executive:createClass(baseClass)
+	baseClass = baseClass or ExecutiveBaseClass  												-- default base to ExecutiveBaseClass
+	local newObject = baseClass:new() 															-- create a new class prototype
 	newObject.m_executive = self 																-- store a reference to the executive.
 	return newObject
 end 
@@ -107,10 +133,12 @@ end
 --//	either the executive member or the member functions. This method decorates the mixin with both. Do not use this with game 
 --//	objects, which are added automatically by the constructor.
 --//	@object 	[object] 		Mixin object to be decorated.
+--//	@return 	[object] 		Object that was decorated.
 
 function Executive:addMixinObject(object)
 	object.m_executive = self  																	-- add a reference to the executive
 	self:attach(object) 																		-- and add the object into the system.
+	return object 																				-- chain it.
 end 
 
 --//%	Attach the given object to the executive system, decorate it if appropriate, and call the constructor.
@@ -146,6 +174,10 @@ function Executive:detach(object)
 			list.objects[object] = nil 															-- remove it
 			list.count = list.count - 1 														-- fix up the object count for that index 
 		end 
+	end
+	
+	for key,ref in pairs(self.e) do 															-- check for reference removal.
+		if ref == object then self.e[key] = nil end 											-- if found a reference remove it.
 	end
 end 
 
@@ -290,9 +322,6 @@ function Executive:addTimer(delay,repeatCount,tag,target)
 	return newEvent.id  																		-- return timer event ID.
 end
 
---	local newEvent = { time = system.getTimer() + delay, count = repeatCount, 					-- create a new timer record.
---								tag = tag, target = target, id = id or Executive.nextFreeTimerID }
-
 --//	Remove a timer with the given timer ID
 --//	@timerID 		[number]		ID of timer to remove 
 
@@ -306,6 +335,28 @@ function Executive:removeTimer(timerID)
 		end 
 	end
 end
+
+--//	Queue a message to be sent to object or objects.
+--//	@recipient 	[object/string]		object or query for recipients of message
+--//	@sender 	[object]			object sending the message
+--//	@message 	[table]				message body.
+--//	@delayTime 	[number]			time message is to be delayed in ms.
+
+function Executive:queueMessage(recipient,sender,message,delayTime)
+	local newMsg = { to = recipient, from = sender, 											-- create a new message
+								body = message, time = system.getTimer()+delayTime }
+	self.m_messageQueue[#self.m_messageQueue+1] = newMsg 										-- add to the message queue (actually unsorted)
+end
+
+--//	Name an object, storing a reference to it in executive.e
+--//	@name 		[string]			Name to give it in the object reference store (always l/c)
+--//	@object 	[object]			Object to attach to that reference.
+
+function Executive:nameObject(name,object) 
+	name = name:lower() 																		-- all names are lower case.
+	assert(self.e[name] == nil,"Duplicate reference name "..name)								-- check unused.
+	self.e[name] = object 																		-- store the reference
+end 
 
 --//%	String split around commas, utility function.
 --//	@s 		[string]			string to split around commas
@@ -430,7 +481,7 @@ function ExecutiveBaseClass:removeTimer(timerID)
 	self.m_executive:removeTimer(timerID)
 end 
 
---//	Send a message after a possible delay.
+--//	Send a message after an optional display. Note that message sending is asynchronous.
 --//	@target 		[query/object]	Object or query to send the message to.
 --//	@contents 		[table]			Message contents.
 --//	@delay 			[number] 		Message delay time in milliseconds (defaults to immediately)
@@ -439,47 +490,18 @@ function ExecutiveBaseClass:sendMessage(target,contents,delay)
 	self.m_executive:queueMessage(target,self,contents or {},delay or -1)
 end 
 
---- ************************************************************************************************************************************************************************
+--//	Name the current object as a reference in executive.e 
+--//	@name 			[string] 		Name to call it.
 
-local x = Executive:new()
-print(x)
-c1 = x:createClass()
-
-function c1:constructor(data)
-	self.data = data 
-	print("Constructor",data)
+function ExecutiveBaseClass:name(name)
+	self.m_executive:nameObject(name,self)
 end 
 
-function c1:destructor()
-	print("Destructor")
-end 
+--//	Get the current executive reference
+--//	@return 		[executive]		Executive object controlling this object
 
-function c1:onUpdate(deltaTime,deltaMillisecs)
-end 
+function ExecutiveBaseClass:getExecutive()
+	return self.m_executive 
+end
 
-o1 = c1:new(32)
-o2 = c1:new(132)
-o3 = c1:new(232)
-
-
-o1:tag("+update,+z,q,a")
-o2:tag("+update,+b")
-o3:tag("+update,+b")
-
-q1 = x:query("update,b")
-print(q1.count)
-print(x:process("update,q,b",function(s) print(s,s.data) end))
---x:delete()
-
-local r1 = o1:addRepeatingTimer(1000,"one")
-local r = o2:addTimer(500,8,"x8")
-o3:addSingleTimer(3000,"kill")
-
-function o1:onTimer(timerID,tag) print("o1",timerID,tag) end
-function o2:onTimer(timerID,tag) print("o2",timerID,tag) end
-function o3:onTimer(timerID,tag) print("o3",timerID,tag) self:removeTimer(r1) self:removeTimer(r) end
-
--- Timer cancellation code.
--- Messaging code.
-
---_G.Executive = Executive require("bully")
+return Executive 
