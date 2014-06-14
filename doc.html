@@ -3,7 +3,15 @@
 <hr><h1>Executive</h1>
 <p><h3>Extends Base</h3></p>
 <p>The Executive Class is the main controller and storage system for objects. It also coordinates updates, timers and asynchronous messaging, which are built in. It uses ObjectLists regularly, which are a table consisting of a count, and a has of objects keyed on references.</p>
-<p>Methods : <a href="#Executive_addMixinObject"/>addMixinObject</a>,<a href="#Executive_createClass"/>createClass</a>,<a href="#Executive_nameObject"/>nameObject</a>,<a href="#Executive_query"/>query</a>,<a href="#Executive_queueMessage"/>queueMessage</a>,<a href="#Executive_removeTimer"/>removeTimer</a></p><hr><a name="Executive_(constructor)"></a>
+<p>Methods : <a href="#Executive_addLibraryObject"/>addLibraryObject</a>,<a href="#Executive_addMixinObject"/>addMixinObject</a>,<a href="#Executive_createClass"/>createClass</a>,<a href="#Executive_enterFrame"/>enterFrame</a>,<a href="#Executive_nameObject"/>nameObject</a>,<a href="#Executive_query"/>query</a>,<a href="#Executive_queueMessage"/>queueMessage</a>,<a href="#Executive_removeTimer"/>removeTimer</a></p><hr><a name="Executive_(constructor)"></a>
+<a name="Executive_addLibraryObject"></a>
+<h2>addLibraryObject(library,data)</h2>
+<table>
+<tr><td>library</td><td>string</td><td>LUA library to use (e.g. utils.controller)</td></tr>
+<tr><td>data</td><td>table</td><td>Data to use in constructor (optional)</td></tr>
+<tr><td>return</td><td>object</td><td>Library object instance.</td></tr>
+</table>
+<p>Add a library defined object. The library should return the class prototype. An instance of this class is created using the supplied constructor data, it is added as a mixin object.</p>
 <a name="Executive_addMixinObject"></a>
 <h2>addMixinObject(object)</h2>
 <table>
@@ -25,6 +33,11 @@
 <a name="Executive_delete"></a>
 <a name="Executive_detach"></a>
 <a name="Executive_enterFrame"></a>
+<h2>enterFrame(eventData)</h2>
+<table>
+<tr><td>eventData</td><td>table</td><td>Event data.</td></tr>
+</table>
+<p>Handle enterFrame events and dispatch them via update, process messages and timers. Sends updates to object:onUpdate(deltaTime,deltaMS,systemTime), timer events to object:onTimer(tag,timerID) and messages to object:onMessage(from,message).</p>
 <a name="Executive_fire"></a>
 <a name="Executive_isGameObjectSubclass"></a>
 <a name="Executive_nameObject"></a>

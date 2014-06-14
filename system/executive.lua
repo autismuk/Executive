@@ -373,6 +373,18 @@ function Executive:split(s)
 	return result
 end 
 
+--//	Add a library defined object. The library should return the class prototype. An instance of this class is created using
+--//	the supplied constructor data, it is added as a mixin object.
+--//	@library 	[string]		LUA library to use (e.g. utils.controller)
+--//	@data 		[table]			Data to use in constructor (optional)
+--//	@return 	[object]		Library object instance.
+
+function Executive:addLibraryObject(library,data)
+	local object = require(library):new(data or {}) 											-- retrieve the class and create it.
+	self:addMixinObject(object) 																-- add it
+	return object
+end 
+
 --- ************************************************************************************************************************************************************************
 --	This is the base class of game objects that are not created via a mixin. Most of the functionality is passed on to helper functions in the Executive Class, this
 --	serves as a base for game objects so they inherit the executive functionality automatically.

@@ -214,7 +214,6 @@ end
 
 --- ************************************************************************************************************************************************************************
 
-
 local pipes = 3
 for i = 1,pipes do 
 	Pipe:new({ gap = 100, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 1.2 })
@@ -224,4 +223,3 @@ Background:new({})
 Score:new({})
 Bird:sendMessage("gameobject",{ event = "start"} ,1000)
 
--- Flappy encapsulate start/stop 

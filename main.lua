@@ -16,9 +16,8 @@
 --require("bully")
 require("main_flappy")
 
--- TODO Flappy sphere collisions.
--- TODO Score.
--- TODO particle class (utility)
+-- TODO Flappy sphere collisions / Flappy FSM.
 -- TODO Error trapping when firing events - should stop any further events firing.
+-- TODO particle class (utility)
 -- TODO FSM Design / FSM 
 -- TODO Extend FSM to manage scenes
