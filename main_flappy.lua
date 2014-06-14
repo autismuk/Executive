@@ -13,6 +13,21 @@ local Executive = require("system.executive")
 local executive = Executive:new()
 
 --- ************************************************************************************************************************************************************************
+--  An example of a class which can be reused - I have abstracted out 'start' and 'stop' messages which add/remove update. This is used in both the bird and the pipes.
+--- ************************************************************************************************************************************************************************
+
+local GameObject = executive:createClass()
+
+function GameObject:onMessage(sender,message)
+	if message.event == "start" then 
+		self:tag("update")
+	end
+	if message.event == "stop" then 
+		self:tag("-update")
+	end
+end 
+
+--- ************************************************************************************************************************************************************************
 --																	Background - sky and ground
 --- ************************************************************************************************************************************************************************
 
@@ -24,10 +39,12 @@ function Background:constructor(info)
 	self.sky.anchorX,self.sky.anchorY = 0,0
 	self.sky:setFillColor(0,1,1)
 	self.sky:toBack()
-	self.ground = display.newRect(0,display.contentHeight,display.contentWidth, 				-- create ground
-														display.contentHeight - self.groundHeight)
+	local h = display.contentHeight - self.groundHeight 										-- height of ground.
+	self.ground = display.newRect(0,display.contentHeight,display.contentWidth,h) 				-- create ground
 	self.ground.anchorX,self.ground.anchorY = 0,1
 	self.ground:setFillColor(0,1,0)
+	self.line = display.newLine(0,self.groundHeight,display.contentWidth,self.groundHeight)
+	self.line.strokeWidth = 4 self.line:setStrokeColor(0,0,0)
 	self.sky:addEventListener("tap",self) 														-- listen for taps.
 	self:name("background")																		-- expose background.
 
@@ -45,6 +62,7 @@ function Background:destructor()
 	self.sky:removeEventListener("tap",self) 													-- remove listener
 	self.ground:removeSelf() 																	-- remove ground
 	self.sky:removeSelf() 																		-- remove sky
+	self.line:removeSelf()
 	self.getReadyText:removeSelf()
 end
 
@@ -56,7 +74,7 @@ end
 --																	Bird (well, sphere) class
 --- ************************************************************************************************************************************************************************
 
-local Bird = executive:createClass()
+local Bird = executive:createClass(GameObject)
 
 function Bird:constructor(info)
 	self.radius = display.contentHeight / 16 													-- radius of the flappy sphere
@@ -64,7 +82,7 @@ function Bird:constructor(info)
 				display.contentHeight / 3,
 				self.radius)
 	self.bird:setFillColor(1,0,0)
-	self.bird.strokeWidth = 2
+	self.bird.strokeWidth = 4
 	self.bird:setStrokeColor(0,0,0)
 	self.y = 1024 / 3  																			-- logical vertical positions.
 	self.vy = 0 																				-- logical vertical velocity.
@@ -77,41 +95,40 @@ function Bird:destructor()
 	self.bird:removeSelf()
 end 
 
-function Bird:onUpdate(deltaTime,deltaMillis)
-	local currentTime = system.getTimer()
+function Bird:onUpdate(deltaTime,deltaMillis,currentTime)
 	local t = math.abs(10-math.floor(currentTime/30) % 20) 										-- cause the sphere to contract, it's flappy sphere
 	self.bird.yScale = t / 20 + 0.5
 	self.vy = self.vy + self.gravity * deltaTime 												-- add gravity
 	self.y = self.y + self.vy * deltaTime 														-- add velocity to position (position is logical 0-1023)
 	self.bird.y = self.y * display.contentHeight / 1024 										-- position bird at new position.
-	if self.bird.y < 0 or self.bird.y > self:getExecutive().e.background.groundHeight then  	-- off the top or bottom
-		self:gameOver()
+	if self.bird.y < 0 or self.bird.y > self:getExecutive().e.background.groundHeight then  	-- off the top or bottom - note use of e to get background height
+		self:flapOver() 																		-- kill that bird.
 	end
 end 
 
 function Bird:onMessage(sender,message)
+	GameObject.onMessage(self,sender,message) 													-- we override onMessage, which means calling the parent.
 	if message.event == "tapped" then  															-- if received a tap message
 		self.vy = self.vy - self.gravity 														-- adjust velocity accordingly.
 	end
-	if message.event == "start" then 
-		self:tag("update")
-	end
-	if message.event == "stop" then 
-		self:tag("-update")
-	end
 end
 
-function Bird:gameOver() 
-	self:sendMessage("gameobject", {event = "stop"})
+function Bird:flapOver() 
+	if not self:isAlive() then return end
+	self:delete() 																				-- kill the bird.															
+	if self:query("bird").count == 0 then 														-- all birds dead ?
+		self:sendMessage("gameobject", {event = "stop"}) 										-- stop all game objects.
+	end
 end 
 
 --- ************************************************************************************************************************************************************************
 --																					Pipe Class
 --- ************************************************************************************************************************************************************************
 
-local Pipe = executive:createClass()
+local Pipe = executive:createClass(GameObject) 													-- note, we are using GameObject as a base class.
 
 Pipe.gameWidth = display.contentWidth + 100 													-- the horizontal scrolling game space size.
+																								-- static values can be stored in the object, rather than using 'e'.
 
 function Pipe:constructor(info)
 	local w = display.contentWidth / 12
@@ -162,24 +179,17 @@ function Pipe:onUpdate(deltaTime,deltaMillis)
 	self:updatePosition() 																		-- update the pipe position.
 end 
 
-function Pipe:onMessage(sender,message)
-	if message.event == "start" then 
-		self:tag("update")
-	end
-	if message.event == "stop" then 
-		self:tag("-update")
-	end 
-end 
-
 --- ************************************************************************************************************************************************************************
 
 --- ************************************************************************************************************************************************************************
 
 
-Bird:new({})
-Bird:sendMessage("gameobject",{ event = "start"} ,1000)
 local pipes = 3
 for i = 1,pipes do 
 	Pipe:new({ gap = 100, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 12 })
 end
+Bird:new({ gravity = 100 })
 Background:new({})
+Bird:sendMessage("gameobject",{ event = "start"} ,1000)
+
+-- Flappy encapsulate start/stop 

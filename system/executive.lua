@@ -69,7 +69,9 @@ function Executive:tableSize(table)
 	return items 
 end
 
---//%	Handle enterFrame events and dispatch them via update, process messages and timers.
+--//	Handle enterFrame events and dispatch them via update, process messages and timers. 
+--//	Sends updates to object:onUpdate(deltaTime,deltaMS,systemTime), timer events to object:onTimer(tag,timerID) and 
+--//	messages to object:onMessage(from,message).
 --//	@eventData [table]			Event data.
 
 function Executive:enterFrame(eventData) 
@@ -80,7 +82,7 @@ function Executive:enterFrame(eventData)
 		local elapsed = math.min(current - (self.m_lastFrame or 0),100) 						-- get elapsed time in ms, max 100.
 		self.m_lastFrame = current 																-- update last frame time
 		for _,ref in pairs(updates.objects) do 													-- then fire all the updates.
-			self:fire(ref,"onUpdate",elapsed/1000,elapsed)  									-- with deltatime/deltaMS
+			self:fire(ref,"onUpdate",elapsed/1000,elapsed,current)  							-- with deltatime/deltaMS
 		end 
 	end 
 	
@@ -95,9 +97,6 @@ function Executive:enterFrame(eventData)
 			table.sort(self.m_timerEvents,function(a,b) return a.time < b.time end) 			-- sort the timer event table so the earliest ones are first.
 		end
 	end
-
-	--local newMsg = { to = recipient, from = sender, 											-- create a new message
-	--							body = message, time = system.getTimer()+delayTime }
 
 	if #self.m_messageQueue > 0 then 															-- is there something in the message queue ?
 		local oldQueue = self.m_messageQueue 													-- make new reference to message queue
