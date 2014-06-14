@@ -12,7 +12,10 @@
 
 --- ************************************************************************************************************************************************************************
 
-require("main_pong")
+--require("main_pong")
+--require("bully")
+require("main_flappy")
+
 --[[
 Executive = require("system.executive")
 
@@ -63,3 +66,6 @@ o1:sendMessage("b",{ name = "My message" })
 
 require("bully")
 --]]
+
+-- TODO terminate on failed update.
+-- TODO pass system timer on update.

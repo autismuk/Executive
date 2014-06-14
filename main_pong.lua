@@ -1,7 +1,7 @@
 --- ************************************************************************************************************************************************************************
 ---
 ---				Name : 		main_pong.lua
----				Purpose :	SOE testing - demented two bat pong game.
+---				Purpose :	Executive testing - demented two bat pong game.
 ---				Created:	7th June 2014
 ---				Author:		Paul Robson (paul@robsons.org.uk)
 ---				License:	MIT
