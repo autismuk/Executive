@@ -51,6 +51,7 @@ function Background:constructor(info)
 
 	self.getReadyText = display.newBitmapText("Get Ready !",									-- arguably, this should be a seperate object
 				display.contentWidth/2,display.contentHeight/2,"font2",80)
+	self.getReadyText:setTintColor(1,0.5,0) 	 												-- so it looks a bit different
 	self:addSingleTimer(1000,"move") 															-- move it after 1000 milliseconds.
 end
 
@@ -69,6 +70,35 @@ end
 function Background:tap(event)
 	self:sendMessage("bird",{ event = "tapped"}) 												-- tell all birds if ground tapped.
 end
+
+--- ************************************************************************************************************************************************************************
+--																					Score class
+--- ************************************************************************************************************************************************************************
+
+local Score = executive:createClass()
+
+function Score:constructor()
+	self.scoreText = display.newBitmapText("XXXX",display.contentWidth-10,10,"font2",60) 		-- create text object
+	self.scoreText:setAnchor(1,0)
+	self.score = 0 																				-- actual score
+	self:updateScore() 																			-- update it with the score
+	self:tag("score") 																			-- tag it 'score' so it can receive appropriate messages
+end 
+
+function Score:onMessage(sender,message)
+	if message.event == "add" then  															-- add some number of points
+		self.score = self.score + message.points 												-- do it !
+		self:updateScore()  																	-- and update.
+	end 
+end 
+
+function Score:updateScore()
+	self.scoreText:setText(("0000"..self.score):sub(-4)) 										-- make text four digit leading zeros.
+end 
+
+function Score:destructor()
+	self.scoreText:removeSelf()
+end 
 
 --- ************************************************************************************************************************************************************************
 --																	Bird (well, sphere) class
@@ -174,7 +204,8 @@ end
 function Pipe:onUpdate(deltaTime,deltaMillis)
 	self.x = self.x - deltaTime * self.xv  														-- move pipe to the left
 	if self.x < -50 then  																		-- if off left then move to the right.
-		self:reposition(self.x + Pipe.gameWidth, self.gap)
+		self:sendMessage("score",{ event = "add",points = 1 }) 									-- score one point
+		self:reposition(self.x + Pipe.gameWidth, self.gap) 										-- and reposition
 	end
 	self:updatePosition() 																		-- update the pipe position.
 end 
@@ -186,10 +217,11 @@ end
 
 local pipes = 3
 for i = 1,pipes do 
-	Pipe:new({ gap = 100, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 12 })
+	Pipe:new({ gap = 100, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 1.2 })
 end
-Bird:new({ gravity = 100 })
+Bird:new({ gravity = 100*0 })
 Background:new({})
+Score:new({})
 Bird:sendMessage("gameobject",{ event = "start"} ,1000)
 
 -- Flappy encapsulate start/stop 
