@@ -1,16 +1,17 @@
 --- ************************************************************************************************************************************************************************
 ---
 ---				Name : 		main_flappy.lua
----				Purpose :	Executive testing - flappy errrr... circle
+---				Purpose :	Executive testing - flappy errrr... sphere ?
 ---				Created:	14th June 2014
 ---				Author:		Paul Robson (paul@robsons.org.uk)
 ---				License:	MIT
 ---
 --- ************************************************************************************************************************************************************************
 
-display.setStatusBar(display.HiddenStatusBar)
-local Executive = require("system.executive")
-local executive = Executive:new()
+display.setStatusBar(display.HiddenStatusBar)													-- hide status bar
+local Executive = require("system.executive")													-- acquire executive class
+require("system.fontmanager") 	 																-- load my fontmananger library
+local executive = Executive:new() 																-- create an executive instance.
 
 --- ************************************************************************************************************************************************************************
 --  An example of a class which can be reused - I have abstracted out 'start' and 'stop' messages which add/remove update. This is used in both the bird and the pipes.
@@ -48,9 +49,8 @@ function Background:constructor(info)
 	self.sky:addEventListener("tap",self) 														-- listen for taps.
 	self:name("background")																		-- expose background.
 
-	self.getReadyText = display.newText("Get Ready !",											-- arguably, this should be a seperate object
-				display.contentWidth/2,display.contentHeight/2,native.systemFont,64)
-	self.getReadyText:setFillColor(0,0,0) 														
+	self.getReadyText = display.newBitmapText("Get Ready !",									-- arguably, this should be a seperate object
+				display.contentWidth/2,display.contentHeight/2,"font2",80)
 	self:addSingleTimer(1000,"move") 															-- move it after 1000 milliseconds.
 end
 
