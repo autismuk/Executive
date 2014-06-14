@@ -29,6 +29,28 @@ function GameObject:onMessage(sender,message)
 end 
 
 --- ************************************************************************************************************************************************************************
+--																The 'Get Ready' text object
+--- ************************************************************************************************************************************************************************
+
+local StartMessage = executive:createClass() 
+
+function StartMessage:constructor()
+	self.getReadyText = display.newBitmapText("Get Ready !",									-- arguably, this should be a seperate object
+				display.contentWidth/2,display.contentHeight/2,"font2",80)
+	self.getReadyText:setTintColor(1,0.5,0) 	 												-- so it looks a bit different
+	self:addSingleTimer(1000,"move") 															-- move it after 1000 milliseconds.
+end 
+
+function StartMessage:onTimer(timerID,tag)
+	transition.to(self.getReadyText, { time = 1000,y = -0,alpha = 0.5, 		 					-- transition the message away
+		onComplete = function() self:delete() end})
+end 
+
+function StartMessage:destructor()
+	self.getReadyText:removeSelf()
+end 
+
+--- ************************************************************************************************************************************************************************
 --																	Background - sky and ground
 --- ************************************************************************************************************************************************************************
 
@@ -49,22 +71,14 @@ function Background:constructor(info)
 	self.sky:addEventListener("tap",self) 														-- listen for taps.
 	self:name("background")																		-- expose background.
 
-	self.getReadyText = display.newBitmapText("Get Ready !",									-- arguably, this should be a seperate object
-				display.contentWidth/2,display.contentHeight/2,"font2",80)
-	self.getReadyText:setTintColor(1,0.5,0) 	 												-- so it looks a bit different
-	self:addSingleTimer(1000,"move") 															-- move it after 1000 milliseconds.
 end
 
-function Background:onTimer(timerID,tag)
-	transition.to(self.getReadyText, { time = 1000,y = -0,alpha = 0 }) 							-- transition the message away
-end 
 
 function Background:destructor()
 	self.sky:removeEventListener("tap",self) 													-- remove listener
 	self.ground:removeSelf() 																	-- remove ground
 	self.sky:removeSelf() 																		-- remove sky
 	self.line:removeSelf()
-	self.getReadyText:removeSelf()
 end
 
 function Background:tap(event)
@@ -145,6 +159,11 @@ end
 
 function Bird:flapOver() 
 	if not self:isAlive() then return end
+	self:getExecutive():addLibraryObject("utils.particle",										-- from the utils.particle library
+										 "ShortEmitter", 										-- short emitter
+										 { emitter = "bomb",time = 1000, 						-- these constructor parameters
+										 		x = self.bird.x,y = self.bird.y })
+
 	self:delete() 																				-- kill the bird.															
 	if self:query("bird").count == 0 then 														-- all birds dead ?
 		self:sendMessage("gameobject", {event = "stop"}) 										-- stop all game objects.
@@ -214,12 +233,16 @@ end
 
 --- ************************************************************************************************************************************************************************
 
-local pipes = 3
-for i = 1,pipes do 
-	Pipe:new({ gap = 100, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 1.2 })
-end
-Bird:new({ gravity = 100*0 })
-Background:new({})
-Score:new({})
-Bird:sendMessage("gameobject",{ event = "start"} ,1000)
+timer.performWithDelay( 200, function() 
+	local pipes = 3
+	for i = 1,pipes do 
+		Pipe:new({ gap = 100, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 12 })
+	end
+	Bird:new({ gravity = 100 })
+	Bird:new({ gravity = 50, x = 100 })
+	Background:new({})
+	Score:new({})
+	StartMessage:new({})  
+	Bird:sendMessage("gameobject",{ event = "start"} ,1000)
+end)
 

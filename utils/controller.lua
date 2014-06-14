@@ -104,4 +104,4 @@ function Controller:getY()
 	return self:minimax(self.button.y / (self.outerRadius - self.innerRadius)) 
 end 
 
-return Controller
+return { FourWay = Controller }

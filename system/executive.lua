@@ -78,22 +78,27 @@ function Executive:enterFrame(eventData)
 	self.m_inUpdate = true 																		-- in update - this blocks delete() 
 	local current = system.getTimer() 															-- get system time
 	local updates = self.m_indices.update 														-- get the updateables list
+	local elapsed = math.min(current - (self.m_lastFrame or 0),100) 							-- get elapsed time in ms, max 100.
+	self.m_lastFrame = current 																	-- update last frame time
+
 	if updates.count > 0 then  																	-- are there some updates ?
-		local elapsed = math.min(current - (self.m_lastFrame or 0),100) 						-- get elapsed time in ms, max 100.
-		self.m_lastFrame = current 																-- update last frame time
 		for _,ref in pairs(updates.objects) do 													-- then fire all the updates.
 			self:fire(ref,"onUpdate",elapsed/1000,elapsed,current)  							-- with deltatime/deltaMS
 		end 
 	end 
 	
-	while #self.m_timerEvents > 0 and self.m_timerEvents[1].time <= current do 					-- event available and fireable ?
+	for i = 1,#self.m_timerEvents do 															-- deduct elapsed time from all timers.
+		self.m_timerEvents[i].time = self.m_timerEvents[i].time - elapsed 
+	end
+
+	while #self.m_timerEvents > 0 and self.m_timerEvents[1].time <= 0 do 						-- event available and fireable ?
 		local event = self.m_timerEvents[1] 													-- get the event.
 		self:fire(event.target,"onTimer",event.tag,event.id) 									-- fire the timer event.
 		event.count = math.max(event.count - 1,-1) 												-- reduce count, bottom out at minus 1.
 		if event.count == 0 then  																-- has it finished.
 			table.remove(self.m_timerEvents,1) 													-- then just throw it away.
 		else
-			event.time = current + event.delay 													-- update the next fire time
+			event.time = event.delay 															-- update the next fire time
 			table.sort(self.m_timerEvents,function(a,b) return a.time < b.time end) 			-- sort the timer event table so the earliest ones are first.
 		end
 	end
@@ -102,9 +107,10 @@ function Executive:enterFrame(eventData)
 		local oldQueue = self.m_messageQueue 													-- make new reference to message queue
 		self.m_messageQueue = {} 																-- and empty the message queue.
 		for i = 1,#oldQueue do 																	-- work through the messages
-			if current >= oldQueue[i].time then 												-- has its send time been reached ?
+			oldQueue[i].time = oldQueue[i].time - elapsed 										-- deduct elapsed time from time to send.
+			if oldQueue[i].time <= 0 then 														-- has its send time been reached ?
 				self:process(oldQueue[i].to,"onMessage",oldQueue[i].from,oldQueue[i].body)
-			else  																				-- time not reached
+			else  												
 				self.m_messageQueue[#self.m_messageQueue+1] = oldQueue[i] 						-- so requeue it.
 			end 
 		end
@@ -132,11 +138,12 @@ end
 --//	either the executive member or the member functions. This method decorates the mixin with both. Do not use this with game 
 --//	objects, which are added automatically by the constructor.
 --//	@object 	[object] 		Mixin object to be decorated.
+--//	@data 		[object] 		Optional data for the constructor call.
 --//	@return 	[object] 		Object that was decorated.
 
-function Executive:addMixinObject(object)
+function Executive:addMixinObject(object,data)
 	object.m_executive = self  																	-- add a reference to the executive
-	self:attach(object) 																		-- and add the object into the system.
+	self:attach(object,data) 																	-- and add the object into the system.
 	return object 																				-- chain it.
 end 
 
@@ -313,7 +320,7 @@ Executive.nextFreeTimerID = 1000 																-- static member, next free tim
 --//	@return 		[number]			internal ID of timer, can be used for cancellation.
 
 function Executive:addTimer(delay,repeatCount,tag,target)
-	local newEvent = { time = delay + system.getTimer(), count = repeatCount, delay = delay, 	-- create a new timer record.
+	local newEvent = { time = delay, count = repeatCount, delay = delay, 						-- create a new timer record.
 													tag = tag, target = target, id = Executive.nextFreeTimerID }
 	self.m_timerEvents[#self.m_timerEvents+1] = newEvent 										-- add event to timer events list
 	Executive.nextFreeTimerID = Executive.nextFreeTimerID + 1 									-- bump the next free timer ID
@@ -343,7 +350,7 @@ end
 
 function Executive:queueMessage(recipient,sender,message,delayTime)
 	local newMsg = { to = recipient, from = sender, 											-- create a new message
-								body = message, time = system.getTimer()+delayTime }
+											body = message, time = delayTime }
 	self.m_messageQueue[#self.m_messageQueue+1] = newMsg 										-- add to the message queue (actually unsorted)
 end
 
@@ -373,15 +380,23 @@ function Executive:split(s)
 	return result
 end 
 
---//	Add a library defined object. The library should return the class prototype. An instance of this class is created using
---//	the supplied constructor data, it is added as a mixin object.
+--//	Add a library defined object. The library should return the class prototype or a table of prototypes (if element is used)
+--//	An instance of this class is created using the supplied constructor data, it is added as a mixin object.
 --//	@library 	[string]		LUA library to use (e.g. utils.controller)
+--//	@element 	[string]		Element with in library (optional)
 --//	@data 		[table]			Data to use in constructor (optional)
 --//	@return 	[object]		Library object instance.
 
-function Executive:addLibraryObject(library,data)
-	local object = require(library):new(data or {}) 											-- retrieve the class and create it.
-	self:addMixinObject(object) 																-- add it
+function Executive:addLibraryObject(library,element,data)
+	local object = require(library)
+	if type(element) == "string" then 															-- if an element is provided.
+		object = object[element] 																-- select that sub prototype
+		assert(object ~= nil,"Library "..library.." does not have a prototype "..element)		-- check it exists.
+	else 
+		data = element 																			-- no element so the data parameter is actually the second one.
+	end 
+	object = object:new(data or {}) 	 														-- create an instance with the provided data.
+	self:addMixinObject(object,data) 															-- add it
 	return object
 end 
 
