@@ -58,15 +58,16 @@ local Background = executive:createClass()
 
 function Background:constructor(info)
 	self.groundHeight = display.contentHeight * 0.9 											-- height of ground.
-	self.sky = display.newRect(0,0,display.contentWidth,display.contentHeight) 					-- create sky
-	self.sky.anchorX,self.sky.anchorY = 0,0
+	self.sky = display.newRect(0,0,570,380) 													-- create sky
+	self.sky.x,self.sky.y = display.contentWidth/2,display.contentHeight/2
+	print(display.contentWidth,display.contentHeight)
 	self.sky:setFillColor(0,1,1)
 	self.sky:toBack()
 	local h = display.contentHeight - self.groundHeight 										-- height of ground.
-	self.ground = display.newRect(0,display.contentHeight,display.contentWidth,h) 				-- create ground
-	self.ground.anchorX,self.ground.anchorY = 0,1
+	self.ground = display.newRect(-50,self.groundHeight,display.contentWidth+50,h+50) 			-- create ground
+	self.ground.anchorX,self.ground.anchorY = 0,0
 	self.ground:setFillColor(0,1,0)
-	self.line = display.newLine(0,self.groundHeight,display.contentWidth,self.groundHeight)
+	self.line = display.newLine(-50,self.groundHeight,display.contentWidth+50,self.groundHeight)
 	self.line.strokeWidth = 4 self.line:setStrokeColor(0,0,0)
 	self.sky:addEventListener("tap",self) 														-- listen for taps.
 	self:name("background")																		-- expose background.
@@ -210,6 +211,8 @@ function Pipe:updatePosition()
 	self.pipeLowerTop.x,self.pipeLowerTop.y = self.x, self.y + self.gap / 2 
 	self.pipeUpper.x,self.pipeUpper.y = self.x, self.y - self.gap / 2 
 	self.pipeUpperTop.x,self.pipeUpperTop.y = self.x, self.y - self.gap / 2 
+	--self.pipeUpper.height = self.pipeUpper.y
+	--self.pipeLower.height = display.contentHeight - self.pipeLower.y
 end
 
 function Pipe:reposition(newX, gapSize)

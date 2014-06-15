@@ -11,7 +11,7 @@
 local Executive = require("system.executive")
 
 local executive = Executive:new()
-executive:addLibraryObject("utils.controller","FourWay",{})
+executive:addLibraryObject("utils.controller","FourWay",{ x = 40,y = 40, r = 30})
 
 --- ************************************************************************************************************************************************************************
 --//	Score class. Done via messaging, could be done by directly accessing object equally. This is a mixin class and shows how they are created.
