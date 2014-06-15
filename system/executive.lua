@@ -34,6 +34,7 @@ function Executive:initialise()
 	self.e = {} 																				-- reference store.
 	self.m_deleteAllRequested = false 															-- used to stop delete all in update
 	self.m_inUpdate = false
+	self.m_callFailed = false 																	-- if a runtime error occurs firing a method, this is set
 	Runtime:addEventListener("enterFrame",self) 												-- add the run time event listener.
 end
 
@@ -56,7 +57,7 @@ function Executive:delete()
 	Runtime:removeEventListener("enterFrame",self) 												-- remove the event listener.
 	self.m_timerEvents = nil 																	-- remove the timer event table.
 	self.m_messageQueue = nil 																	-- remove the message queue
-	self.m_deleteAllRequested = nil self.m_inUpdate = nil self.e = nil 							-- tidy up.
+	self.m_deleteAllRequested = nil self.m_inUpdate = nil self.e = nil self.m_callFailed = nil	-- tidy up.
 end
 
 --//%	Utility function which returns the number of items in a table
@@ -247,13 +248,15 @@ end
 --//	@return 	true 			Methods all fired successfully.
 
 function Executive:process(object,method,...)
-	if type(object) == "table" then return self:fire(object,method,...) end  					-- if just an object, then fire it on its own.
-	local ok = true 
-	local queryResult = self:query(object) 														-- evaluate the query. 
-	for _,ref in pairs(queryResult.objects) do 													-- work through all the results.
-		ok = ok and self:fire(ref,method,...) 													-- fire a method, set ok false if fails
-	end 
-	return ok 																					-- return success.
+	if type(object) == "table" then 	 													-- if just an object, then fire it on its own.
+		 return self:fire(object,method,...)
+	end	
+	local fireOk = true
+	local queryResult = self:query(object) 													-- evaluate the query. 
+	for _,ref in pairs(queryResult.objects) do 												-- work through all the results.
+		fireOk = fireOk and self:fire(ref,method,...) 										-- fire a method, set fire ok false if fails
+	end
+	return fireOk
 end 
 
 --//%	Fire a method (either function or name) on given object. Also passes any following parameters to the call.
@@ -262,14 +265,28 @@ end
 --//	@return 	true 			Method fired successfully.
 
 function Executive:fire(object,method,...)
-	if not object:isAlive() then return false end  												-- return false if object dead
-	if type(method) == "function" then 
-		method(object,...)
-	else 
-		assert(object[method] ~= nil,"Object does not have method "..method)
-		object[method](object,...)
+	if self.m_callFailed then return false end													-- exit if a call has failed, stops endless messages.
+	local arguments = { ... } 																	-- convert arguments to a table
+	local callsOk,fireOk,errorMsg
+	fireOk = true 																				-- true if events fired Ok.
+	callsOk,errorMsg = pcall(function() 														-- fire events with error trapped.
+		if not object:isAlive() then 															-- if object dead, didn't fire but no error.
+			fireOk = false 
+		else  																					-- attempt to fire.
+			if type(method) == "function" then  	 											-- fire function
+				method(object,unpack(arguments))
+			else 
+				assert(object[method] ~= nil,"Object does not have method "..method) 			-- if firing method check it is there.
+				object[method](object,unpack(arguments)) 										-- then fire it.
+			end
+		end
+	end)
+	if not callsOk then  																		-- assert/error raised during firing.
+		self.m_callFailed = true  																-- stop any further firing of methods.
+		print("Executive : updates stopped, reason") 											-- explain why.
+		print(errorMsg)
 	end
-	return true
+	return fireOk and callsOk 																	-- successful if it fired and didn't cause an error.
 end 
 
 --//	Query the object database for all objects with all the listed tags.

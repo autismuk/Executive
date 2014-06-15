@@ -60,7 +60,6 @@ function Background:constructor(info)
 	self.groundHeight = display.contentHeight * 0.9 											-- height of ground.
 	self.sky = display.newRect(0,0,570,380) 													-- create sky
 	self.sky.x,self.sky.y = display.contentWidth/2,display.contentHeight/2
-	print(display.contentWidth,display.contentHeight)
 	self.sky:setFillColor(0,1,1)
 	self.sky:toBack()
 	local h = display.contentHeight - self.groundHeight 										-- height of ground.
@@ -241,7 +240,7 @@ timer.performWithDelay( 200, function()
 	for i = 1,pipes do 
 		Pipe:new({ gap = 100, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 12 })
 	end
-	Bird:new({ gravity = 100 })
+	Bird:new({ gravity = 100*1 })
 	Bird:new({ gravity = 50, x = 100 })
 	Background:new({})
 	Score:new({})
