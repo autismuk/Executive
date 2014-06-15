@@ -16,7 +16,6 @@
 --require("bully")
 require("main_flappy")
 
--- TODO Flappy sphere collisions
 -- TODO FSM Design / FSM 
 -- TODO Flappy FSM
 -- TODO Extend FSM to manage scenes

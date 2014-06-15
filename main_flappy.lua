@@ -147,6 +147,14 @@ function Bird:onUpdate(deltaTime,deltaMillis,currentTime)
 	self.bird.y = self.y * display.contentHeight / 1024 										-- position bird at new position.
 	if self.bird.y < 0 or self.bird.y > self:getExecutive().e.background.groundHeight then  	-- off the top or bottom - note use of e to get background height
 		self:flapOver() 																		-- kill that bird.
+	else 
+		local obstacleList = self:query("obstacle") 											-- otherwise, get a list of obstacles.
+		for _,ref in pairs(obstacleList.objects) do 											-- ask every obstacle if we have collided with it.
+			if ref:isAlive() and ref:hasCollided(self.bird.x,self.bird.y,self.radius) then  	-- checking it is alive first
+				self:flapOver() 																-- if have collided, then flap is over.
+				break
+			end
+		end
 	end
 end 
 
@@ -181,6 +189,7 @@ Pipe.gameWidth = display.contentWidth + 100 													-- the horizontal scrol
 
 function Pipe:constructor(info)
 	local w = display.contentWidth / 12
+	self.scrollCount = 0 																		-- number of times scrolled off.
 	self.pipeLower = self:createPipe(display.contentHeight,w) 									-- create lower pipe.
 	self.pipeUpper = self:createPipe(display.contentHeight,w) 									-- create upper pipe.
 	self.pipeUpperTop = self:createPipe(display.contentHeight/14, w * 1.2) 						-- and tops
@@ -188,7 +197,7 @@ function Pipe:constructor(info)
 	self.pipeUpper.anchorY = 1 self.pipeUpperTop.anchorY = 1 									-- top anchor point is at their bottom
 	self:reposition(info.x,info.gap)															-- reposition pipe horizontally.
 	self.xv = display.contentWidth / info.speed 												-- calculate pixels per second move.
-	self:tag("gameobject")
+	self:tag("gameobject,obstacle")
 end 
 
 function Pipe:destructor()
@@ -210,8 +219,6 @@ function Pipe:updatePosition()
 	self.pipeLowerTop.x,self.pipeLowerTop.y = self.x, self.y + self.gap / 2 
 	self.pipeUpper.x,self.pipeUpper.y = self.x, self.y - self.gap / 2 
 	self.pipeUpperTop.x,self.pipeUpperTop.y = self.x, self.y - self.gap / 2 
-	--self.pipeUpper.height = self.pipeUpper.y
-	--self.pipeLower.height = display.contentHeight - self.pipeLower.y
 end
 
 function Pipe:reposition(newX, gapSize)
@@ -225,10 +232,19 @@ end
 function Pipe:onUpdate(deltaTime,deltaMillis)
 	self.x = self.x - deltaTime * self.xv  														-- move pipe to the left
 	if self.x < -50 then  																		-- if off left then move to the right.
+		self.scrollCount = self.scrollCount + 1 												-- add scrolling count
+		local newGap = math.max(self.gap - 4,70)
 		self:sendMessage("score",{ event = "add",points = 1 }) 									-- score one point
-		self:reposition(self.x + Pipe.gameWidth, self.gap) 										-- and reposition
+		self:reposition(self.x + Pipe.gameWidth, newGap) 										-- and reposition
 	end
 	self:updatePosition() 																		-- update the pipe position.
+end 
+
+function Pipe:hasCollided(x,y,r)
+	local dx = math.abs(x - self.x) 															-- pipe distance, horizontal
+	if dx > r + self.pipeLower.width / 2 then return false end  								-- out of range , return false 
+	local dy = math.abs(self.y - y)
+	return dy+r/2 >= self.gap/2
 end 
 
 --- ************************************************************************************************************************************************************************
@@ -238,10 +254,10 @@ end
 timer.performWithDelay( 200, function() 
 	local pipes = 3
 	for i = 1,pipes do 
-		Pipe:new({ gap = 100, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 12 })
+		Pipe:new({ gap = 150, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 12 })
 	end
 	Bird:new({ gravity = 100*1 })
-	Bird:new({ gravity = 50, x = 100 })
+	--Bird:new({ gravity = 50, x = 100 })
 	Background:new({})
 	Score:new({})
 	StartMessage:new({})  
