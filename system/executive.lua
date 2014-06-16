@@ -36,6 +36,7 @@ function Executive:initialise()
 	self.m_inUpdate = false
 	self.m_callFailed = false 																	-- if a runtime error occurs firing a method, this is set
 	Runtime:addEventListener("enterFrame",self) 												-- add the run time event listener.
+	self.m_displayGroup = nil 																	-- the associated display group.
 end
 
 --//%	The Executive destructor deletes all objects, checks all indices and lists are clear, and removes the enterFrame listener.
@@ -53,12 +54,27 @@ function Executive:delete()
 		assert(list.count == 0,"Index count non zero "..name) 									-- check they are empty.
 		assert(self:tableSize(list.objects) == 0,"Index not empty "..name)
 	end 
+	if self.m_displayGroup ~= nil then 															-- display group created ?
+		assert(self.m_displayGroup.numChildren == 0,"Display Group not empty") 					-- check everything has been removed from it.
+		self.m_displayGroup:removeSelf() 														-- delete it.
+		self.m_displayGroup = nil 																-- null the reference
+	end
 	self.m_indices = nil 																		-- remove that reference
 	Runtime:removeEventListener("enterFrame",self) 												-- remove the event listener.
 	self.m_timerEvents = nil 																	-- remove the timer event table.
 	self.m_messageQueue = nil 																	-- remove the message queue
 	self.m_deleteAllRequested = nil self.m_inUpdate = nil self.e = nil self.m_callFailed = nil	-- tidy up.
 end
+
+--//%	Add a display object to the group.
+--//	@object 	[display object] 		display object to be attached to the executive's group.
+
+function Executive:insert(object)
+	if self.m_displayGroup == nil then 															-- create group if it doesn't already exist.
+		self.m_displayGroup = display.newGroup() 
+	end 			
+	self.m_displayGroup:insert(object) 															-- insert this object into it.
+end 
 
 --//%	Utility function which returns the number of items in a table
 --//	@table 	[table]				Table to count items of
@@ -445,6 +461,14 @@ end
 
 function ExecutiveBaseClass:destructor()
 	-- print("Destructor",self,self.m_executive)
+end 
+
+--//	Add a display object to the group associated with this object's executive.
+--//	@object 	[display object] 		display objects to be attached to the executive's group, multiple objects
+
+function ExecutiveBaseClass:insert(...)
+	local objects = { ... }																		-- table of object to attach
+	for _,ref in ipairs(objects) do self.m_executive:insert(ref) end 							-- add all the objects
 end 
 
 --//	Delete object from game. This calls the destructor and disconnects the object from the executive 

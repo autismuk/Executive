@@ -21,20 +21,67 @@ local FSM = Base:new()
 --//	@info 	[table]			contains states, built of events, and listener and firstState items.
 
 function FSM:constructor(info)
-	self.fsm = info 																			-- save the fsm object
 	info.listeners = info.listeners or "fsmlistener" 											-- default listener is fsmlistener
 	info.firstState = info.firstState or "start" 												-- default state is start.
-	-- TODO process casing and check.
-	self.current = info.firstState 																-- set the current state.
-	self:announce("enter",info.firstState,nil,nil) 												-- announce entering first state.
+	self.current = info.firstState:lower() 														-- set the current state.
+	self.fsm = {}
+	for key,value in pairs(info) do 															-- work through all the entries in the info table
+		if type(value) == "table" and type(value.target) == "function" then  					-- it table (e.g. it is a state) then add it.
+			self:addState(key,value)
+		else 
+			self.fsm[key:lower()] = value 														-- otherwise copy the value.
+		end
+	end
+	self.fsmStarted = false 																	-- mark as not started
 end 
+
+--//	Start an FSM, validating it first
+--//	@return 	[FSM]		Self, allowing chaining.
+
+function FSM:start()
+	assert(not self.fsmStarted,"Cannot restart fsm")											-- can't start it twice
+	self.fsmStarted = true 																		-- mark it started
+	for key,value in pairs(self.fsm) do  														-- work through all the states
+		if type(value) == "table" then 
+			for event,data in pairs(value) do  													-- work through all the events.
+				data.target = data.target:lower() 												-- make target L/C, check it exists.
+				assert(self.fsm[data.target] ~= nil,"State "..key.." event "..event.." has unknown target "..data.target)
+			end 
+		end 
+	end
+	self:announce("enter",self.current,nil,nil) 												-- announce entering first state.
+	return self 																				-- allow chaining.
+end 
+
+--//	Add a state to the FSM
+--//	@stateName 	[string] 		Text name of state
+--//	@stateDef  	[table]			Table of events for that state.
+
+function FSM:addState(stateName,statedef)
+	local copy = {} 																			-- copy of the state
+	for name,data in pairs(statedef) do  														-- clone the copy, using lower case keys
+		copy[name:lower()] = data 
+	end 
+	assert(self.fsm[stateName:lower()] == nil,"Duplicate state "..stateName)					-- check it doesn't already exist.
+	self.fsm[stateName:lower()] = copy 															-- and store it.
+end 
+
+--//% 	Send an announcement about a state transition to all listeners
+--//	@transaction 	[string]		enter or leave
+--//	@state 			[string]		state leaving or entering
+--//	@lastState 		[string] 		last state, if entering
+--//	@data 			[table] 		associated data from the fsm
 
 function FSM:announce(transaction,state,lastState,data)
 	self:sendMessage(self.fsm.listeners,														-- tell all listener(s) what is being done.
 						{ transaction = transaction, state = state, data = data, previousState = lastState })
 end
 
+--// 	Send an event to the FSM, causing a possible change of state.
+--//	@event 			[string]		event occurring
+
 function FSM:event(event)
+	assert(self.fsmStarted,"FSM has not been started")											-- check the FSM has been started.
 	event = event:lower() 																		-- case independent
 	local switch = self.fsm[self.current][event] 												-- get the the switch record
 	assert(switch ~= nil,"Unknown event "..event.." in state "..self.current) 					-- if no switch record (bad event) report an error.
@@ -44,12 +91,17 @@ function FSM:event(event)
 	self:announce("enter",self.current,last,switch) 											-- announce entering state
 end 
 
+--//	Get the current state
+--//	@return 	[string]			current state.
+
 function FSM:getState() 																	
 	return self.current 																		-- return current state.
 end 
 
+--//% 	FSM Destructor
+
 function FSM:destructor()
-	self.fsm = nil self.current = nil 															-- null out references.
+	self.fsm = nil self.current = nil self.fsmStarted = nil										-- null out references.
 end
 
 

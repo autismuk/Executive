@@ -39,6 +39,7 @@ function StartMessage:constructor()
 				display.contentWidth/2,display.contentHeight/2,"font2",80)
 	self.getReadyText:setTintColor(1,0.5,0) 	 												-- so it looks a bit different
 	self:addSingleTimer(1000,"move") 															-- move it after 1000 milliseconds.
+	self:insert(self.getReadyText)
 end 
 
 function StartMessage:onTimer(timerID,tag)
@@ -61,7 +62,6 @@ function Background:constructor(info)
 	self.sky = display.newRect(0,0,570,380) 													-- create sky
 	self.sky.x,self.sky.y = display.contentWidth/2,display.contentHeight/2
 	self.sky:setFillColor(0,1,1)
-	self.sky:toBack()
 	local h = display.contentHeight - self.groundHeight 										-- height of ground.
 	self.ground = display.newRect(-50,self.groundHeight,display.contentWidth+50,h+50) 			-- create ground
 	self.ground.anchorX,self.ground.anchorY = 0,0
@@ -70,7 +70,8 @@ function Background:constructor(info)
 	self.line.strokeWidth = 4 self.line:setStrokeColor(0,0,0)
 	self.sky:addEventListener("tap",self) 														-- listen for taps.
 	self:name("background")																		-- expose background.
-
+	self:insert(self.sky,self.line,self.ground) 												-- add objects to display group.
+	self.sky:toBack()
 end
 
 
@@ -97,6 +98,7 @@ function Score:constructor()
 	self.score = 0 																				-- actual score
 	self:updateScore() 																			-- update it with the score
 	self:tag("score") 																			-- tag it 'score' so it can receive appropriate messages
+	self:insert(self.scoreText)
 end 
 
 function Score:onMessage(sender,message)
@@ -133,6 +135,7 @@ function Bird:constructor(info)
 	self.gravity = info.gravity or 100 															-- gravity effect
 	self:tag("bird") 																			-- receives controller messages
 	self:tag("gameobject") 																		-- general game object stuff.
+	self:insert(self.bird)
 end
 
 function Bird:destructor()
@@ -175,6 +178,7 @@ function Bird:flapOver()
 	self:delete() 																				-- kill the bird.															
 	if self:query("bird").count == 0 then 														-- all birds dead ?
 		self:sendMessage("gameobject", {event = "stop"}) 										-- stop all game objects.
+		self:getExecutive():delete()
 	end
 end 
 
@@ -186,7 +190,6 @@ local Pipe = executive:createClass(GameObject) 													-- note, we are usin
 
 Pipe.gameWidth = display.contentWidth + 100 													-- the horizontal scrolling game space size.
 																								-- static values can be stored in the object, rather than using 'e'.
-
 function Pipe:constructor(info)
 	local w = display.contentWidth / 12
 	self.scrollCount = 0 																		-- number of times scrolled off.
@@ -198,6 +201,7 @@ function Pipe:constructor(info)
 	self:reposition(info.x,info.gap)															-- reposition pipe horizontally.
 	self.xv = display.contentWidth / info.speed 												-- calculate pixels per second move.
 	self:tag("gameobject,obstacle")
+	self:insert(self.pipeLower,self.pipeUpper,self.pipeUpperTop,self.pipeLowerTop)
 end 
 
 function Pipe:destructor()
@@ -251,16 +255,22 @@ end
 
 --- ************************************************************************************************************************************************************************
 
-timer.performWithDelay( 200, function() 
+function executive:create()
+	--Bird:new({ gravity = 50, x = 100 })
+	StartMessage:new({})  
 	local pipes = 3
 	for i = 1,pipes do 
 		Pipe:new({ gap = 150, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 12 })
 	end
-	Bird:new({ gravity = 100*1 })
-	--Bird:new({ gravity = 50, x = 100 })
 	Background:new({})
+	Bird:new({ gravity = 100*0 })
 	Score:new({})
-	StartMessage:new({})  
+end 
+
+function executive:start()
 	Bird:sendMessage("gameobject",{ event = "start"} ,1000)
-end)
+end
+
+executive:create()
+executive:start()
 
