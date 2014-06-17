@@ -29,7 +29,7 @@ function GameObject:onMessage(sender,message)
 end 
 
 --- ************************************************************************************************************************************************************************
---																The 'Get Ready' text object
+--																		Text Message Objects
 --- ************************************************************************************************************************************************************************
 
 local StartMessage = executive:createClass() 
@@ -49,6 +49,19 @@ end
 
 function StartMessage:destructor()
 	self.getReadyText:removeSelf()
+end 
+
+local EndMessage = executive:createClass()
+
+function EndMessage:constructor()
+	self.gameOverText = display.newBitmapText("Game Over",display.contentWidth/2,display.contentHeight/2,"font2",80)
+	self.gameOverText:setModifier("scale"):animate(2)
+	self.gameOverText.alpha = 0
+	transition.to(self.gameOverText, { time = 2000, alpha = 1})
+	self:insert(self.gameOverText)
+end 
+function EndMessage:destructor()
+	self.gameOverText:removeSelf()
 end 
 
 --- ************************************************************************************************************************************************************************
@@ -178,7 +191,8 @@ function Bird:flapOver()
 	self:delete() 																				-- kill the bird.															
 	if self:query("bird").count == 0 then 														-- all birds dead ?
 		self:sendMessage("gameobject", {event = "stop"}) 										-- stop all game objects.
-		self:getExecutive():delete()
+		EndMessage:new({})
+		--self:getExecutive():delete()
 	end
 end 
 
@@ -260,15 +274,21 @@ function executive:create()
 	StartMessage:new({})  
 	local pipes = 3
 	for i = 1,pipes do 
-		Pipe:new({ gap = 150, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 12 })
+		Pipe:new({ gap = 150, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 1.2 })
 	end
 	Background:new({})
-	Bird:new({ gravity = 100*0 })
+	Bird:new({ gravity = 100*23 })
 	Score:new({})
 end 
 
 function executive:start()
 	Bird:sendMessage("gameobject",{ event = "start"} ,1000)
+end
+
+function executive:stop()
+end 
+
+function executive:destroy()
 end
 
 executive:create()
