@@ -273,12 +273,61 @@ function Pipe:hasCollided(x,y,r)
 end 
 
 --- ************************************************************************************************************************************************************************
-
+--																	Title Screen class and factory class
 --- ************************************************************************************************************************************************************************
 
-local FactoryDemo = Base:new()
+local TitleScreen = Executive:createClass()
 
-function FactoryDemo:preOpen()
+function TitleScreen:constructor()
+	self.title = display.newBitmapText("Flappy Sphere",display.contentWidth/2,-300,"font2",72)
+	self.title.yScale = 3
+	self.descr = display.newText("A 'Corona Executive' Demo",display.contentWidth / 2,display.contentHeight - 40,system.nativeFont,32)
+	self.descr.alpha = 0
+	self:insert(self.title)
+end 
+
+function TitleScreen:destructor()
+	self.title:removeEventListener( "tap",self)
+	self.title:removeSelf()
+	self.descr:removeSelf()
+end 
+
+function TitleScreen:start()
+	transition.to(self.title,{ time = 1500, y = display.contentHeight * 0.55, transition = easing.outElastic,
+		onComplete = function() transition.to(self.descr, { time = 500,alpha = 1}) end })
+	self.title:addEventListener( "tap",self)
+end 
+
+function TitleScreen:tap(e)
+	print("Start")
+end 
+
+local TitleScreenFactory = Base:new()
+
+function TitleScreenFactory:preOpen()
+	self.executive = Executive:new()
+	self.title = TitleScreen:new(self.executive)
+end 
+
+function TitleScreenFactory:open()
+	self.title:start()
+end 
+
+function TitleScreenFactory:close()
+end 
+
+function TitleScreenFactory:postClose()
+	self.executive:delete()
+	self.executive = nil
+end
+
+--- ************************************************************************************************************************************************************************
+-- 																			Flappy Bird Factory Class
+--- ************************************************************************************************************************************************************************
+
+local GameFactory = Base:new()
+
+function GameFactory:preOpen()
 	self.executive = Executive:new()
 	self.workObject = StartMessage:new(self.executive)  
 	local pipes = 3
@@ -290,19 +339,21 @@ function FactoryDemo:preOpen()
 	Score:new(self.executive,{})
 end 
 
-function FactoryDemo:open()
+function GameFactory:open()
 	self.workObject:sendMessage("gameobject",{ event = "start"} ,1000)
 end
 
-function FactoryDemo:close()
+function GameFactory:close()
 end 
 
-function FactoryDemo:postClose()
+function GameFactory:postClose()
 	self.executive:delete()
 	self.executive = nil
 end
 
-local fd = FactoryDemo:new()
+--local fd = FactoryDemo:new()
+local fd = TitleScreenFactory:new()
+
 fd:preOpen()
 fd:open()
 --fd:close() fd:postClose()
