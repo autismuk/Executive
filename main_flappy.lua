@@ -10,6 +10,8 @@
 
 display.setStatusBar(display.HiddenStatusBar)													-- hide status bar
 local Executive = require("system.executive")													-- acquire executive class
+local ExecutiveFactory = require("system.game")													-- acquire Executive Factory Base Class
+
 require("system.fontmanager") 	 																-- load my fontmananger library
 
 --- ************************************************************************************************************************************************************************
@@ -302,56 +304,39 @@ function TitleScreen:tap(e)
 	print("Start")
 end 
 
-local TitleScreenFactory = Base:new()
+local TitleScreenFactory = ExecutiveFactory:new()
 
 function TitleScreenFactory:preOpen()
-	self.executive = Executive:new()
-	self.title = TitleScreen:new(self.executive)
+	self.title = TitleScreen:new(self:getExecutive())
 end 
 
 function TitleScreenFactory:open()
 	self.title:start()
 end 
 
-function TitleScreenFactory:close()
-end 
-
-function TitleScreenFactory:postClose()
-	self.executive:delete()
-	self.executive = nil
-end
-
 --- ************************************************************************************************************************************************************************
 -- 																			Flappy Bird Factory Class
 --- ************************************************************************************************************************************************************************
 
-local GameFactory = Base:new()
+local GameFactory = ExecutiveFactory:new()
 
-function GameFactory:preOpen()
-	self.executive = Executive:new()
-	self.workObject = StartMessage:new(self.executive)  
+function GameFactory:preOpen()																	-- before opening, create all the game objects
+	local exec = self:getExecutive()
+	self.workObject = StartMessage:new(exec)  
 	local pipes = 3
 	for i = 1,pipes do 
-		Pipe:new({ executive = self.executive,gap = 150, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 12 })
+		Pipe:new({ executive = exec,gap = 150, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 12 })
 	end
-	Background:new({ executive = self.executive })
-	Bird:new(self.executive,{ gravity = 100*1 })
-	Score:new(self.executive,{})
+	Background:new({ executive = exec })
+	Bird:new(exec,{ gravity = 100*1 })
+	Score:new(exec,{})
 end 
 
 function GameFactory:open()
-	self.workObject:sendMessage("gameobject",{ event = "start"} ,1000)
+	self.workObject:sendMessage("gameobject",{ event = "start"} ,1000) 							-- when transition complete, start.
 end
 
-function GameFactory:close()
-end 
-
-function GameFactory:postClose()
-	self.executive:delete()
-	self.executive = nil
-end
-
---local fd = FactoryDemo:new()
+--local fd = GameFactory:new()
 local fd = TitleScreenFactory:new()
 
 fd:preOpen()
