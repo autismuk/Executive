@@ -276,30 +276,33 @@ end
 
 --- ************************************************************************************************************************************************************************
 
-local executive = Executive:new()
-local workObject 
+local FactoryDemo = Base:new()
 
-function preOpen()
-	workObject = StartMessage:new(executive)  
+function FactoryDemo:preOpen()
+	self.executive = Executive:new()
+	self.workObject = StartMessage:new(self.executive)  
 	local pipes = 3
 	for i = 1,pipes do 
-		Pipe:new({ executive = executive,gap = 150, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 1.2 })
+		Pipe:new({ executive = self.executive,gap = 150, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 12 })
 	end
-	Background:new({ executive = executive })
-	Bird:new(executive,{ gravity = 100*0 })
-	Score:new(executive,{})
+	Background:new({ executive = self.executive })
+	Bird:new(self.executive,{ gravity = 100*1 })
+	Score:new(self.executive,{})
 end 
 
-function open()
-	workObject:sendMessage("gameobject",{ event = "start"} ,1000)
+function FactoryDemo:open()
+	self.workObject:sendMessage("gameobject",{ event = "start"} ,1000)
 end
 
-function close()
+function FactoryDemo:close()
 end 
 
-function postClose()
+function FactoryDemo:postClose()
+	self.executive:delete()
+	self.executive = nil
 end
 
-preOpen()
-open()
-
+local fd = FactoryDemo:new()
+fd:preOpen()
+fd:open()
+--fd:close() fd:postClose()
