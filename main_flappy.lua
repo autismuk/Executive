@@ -11,13 +11,12 @@
 display.setStatusBar(display.HiddenStatusBar)													-- hide status bar
 local Executive = require("system.executive")													-- acquire executive class
 require("system.fontmanager") 	 																-- load my fontmananger library
-local executive = Executive:new() 																-- create an executive instance.
 
 --- ************************************************************************************************************************************************************************
 --  An example of a class which can be reused - I have abstracted out 'start' and 'stop' messages which add/remove update. This is used in both the bird and the pipes.
 --- ************************************************************************************************************************************************************************
 
-local GameObject = executive:createClass()
+local GameObject = Executive:createClass()
 
 function GameObject:onMessage(sender,message)
 	if message.event == "start" then 
@@ -32,7 +31,7 @@ end
 --																		Text Message Objects
 --- ************************************************************************************************************************************************************************
 
-local StartMessage = executive:createClass() 
+local StartMessage = Executive:createClass() 
 
 function StartMessage:constructor()
 	self.getReadyText = display.newBitmapText("Get Ready !",									-- arguably, this should be a seperate object
@@ -51,11 +50,19 @@ function StartMessage:destructor()
 	self.getReadyText:removeSelf()
 end 
 
-local EndMessage = executive:createClass()
+local EndMessage = Executive:createClass()
+
+local function spinner(modifier, cPos, info)
+	local w = math.floor(info.elapsed/720) % info.length + 1 				
+	if info.index == w then  												
+		local newScale = 2 * (info.elapsed % 360) / 360 - 1 				
+		modifier.xScale = newScale 					
+	end
+end
 
 function EndMessage:constructor()
 	self.gameOverText = display.newBitmapText("Game Over",display.contentWidth/2,display.contentHeight/2,"font2",80)
-	self.gameOverText:setModifier("scale"):animate(2)
+	self.gameOverText:setModifier(spinner):animate(2)
 	self.gameOverText.alpha = 0
 	transition.to(self.gameOverText, { time = 2000, alpha = 1})
 	self:insert(self.gameOverText)
@@ -68,7 +75,7 @@ end
 --																	Background - sky and ground
 --- ************************************************************************************************************************************************************************
 
-local Background = executive:createClass()
+local Background = Executive:createClass()
 
 function Background:constructor(info)
 	self.groundHeight = display.contentHeight * 0.9 											-- height of ground.
@@ -103,7 +110,7 @@ end
 --																					Score class
 --- ************************************************************************************************************************************************************************
 
-local Score = executive:createClass()
+local Score = Executive:createClass()
 
 function Score:constructor()
 	self.scoreText = display.newBitmapText("XXXX",display.contentWidth-10,10,"font2",60) 		-- create text object
@@ -133,7 +140,7 @@ end
 --																	Bird (well, sphere) class
 --- ************************************************************************************************************************************************************************
 
-local Bird = executive:createClass(GameObject)
+local Bird = Executive:createClass(GameObject)
 
 function Bird:constructor(info)
 	self.radius = display.contentHeight / 16 													-- radius of the flappy sphere
@@ -191,7 +198,7 @@ function Bird:flapOver()
 	self:delete() 																				-- kill the bird.															
 	if self:query("bird").count == 0 then 														-- all birds dead ?
 		self:sendMessage("gameobject", {event = "stop"}) 										-- stop all game objects.
-		EndMessage:new({})
+		EndMessage:new(self:getExecutive(),{})
 		--self:getExecutive():delete()
 	end
 end 
@@ -200,7 +207,7 @@ end
 --																					Pipe Class
 --- ************************************************************************************************************************************************************************
 
-local Pipe = executive:createClass(GameObject) 													-- note, we are using GameObject as a base class.
+local Pipe = Executive:createClass(GameObject) 													-- note, we are using GameObject as a base class.
 
 Pipe.gameWidth = display.contentWidth + 100 													-- the horizontal scrolling game space size.
 																								-- static values can be stored in the object, rather than using 'e'.
@@ -269,28 +276,30 @@ end
 
 --- ************************************************************************************************************************************************************************
 
-function executive:create()
-	--Bird:new({ gravity = 50, x = 100 })
-	StartMessage:new({})  
+local executive = Executive:new()
+local workObject 
+
+function preOpen()
+	workObject = StartMessage:new(executive)  
 	local pipes = 3
 	for i = 1,pipes do 
-		Pipe:new({ gap = 150, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 1.2 })
+		Pipe:new({ executive = executive,gap = 150, x = ((i-1)/pipes+1)*(Pipe.gameWidth), speed = 1.2 })
 	end
-	Background:new({})
-	Bird:new({ gravity = 100*23 })
-	Score:new({})
+	Background:new({ executive = executive })
+	Bird:new(executive,{ gravity = 100*0 })
+	Score:new(executive,{})
 end 
 
-function executive:start()
-	Bird:sendMessage("gameobject",{ event = "start"} ,1000)
+function open()
+	workObject:sendMessage("gameobject",{ event = "start"} ,1000)
 end
 
-function executive:stop()
+function close()
 end 
 
-function executive:destroy()
+function postClose()
 end
 
-executive:create()
-executive:start()
+preOpen()
+open()
 

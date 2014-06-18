@@ -165,10 +165,10 @@ end
 --																				Main bit
 --- ************************************************************************************************************************************************************************
 
-Bat:new({ x = 32 }) 																			-- create two bats
-Bat:new({ x = display.contentWidth/3 })
-for i = 1,33 do Ball:new({}) end 																-- and lots of balls.
+local bat = Bat:new(executive,{ x = 32 }) 														-- create two bats
+Bat:new(executive,{ x = display.contentWidth/3 })
+for i = 1,33 do Ball:new(executive,{}) end 														-- and lots of balls.
 
-Ball:sendMessage("ball",{},1000)																-- send message to the balls (starting them) after 1 second.
+bat:sendMessage("ball",{},1000)																	-- send message to the balls (starting them) after 1 second.
 
 

@@ -59,7 +59,7 @@ end
 math.randomseed(57) 																			-- preseed randomiser.
 
 for i = 1,objectCount do  																		-- create untagged objects.
-	objects[i] = WorkingClass:new({ name = "name"..i })
+	objects[i] = WorkingClass:new(exec,{ name = "name"..i })
 end
 for i = 1,tagCount do 																			-- create tag names
 	tagNames[i] = "tag"..i 

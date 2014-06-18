@@ -37,6 +37,7 @@ function Executive:initialise()
 	self.m_callFailed = false 																	-- if a runtime error occurs firing a method, this is set
 	Runtime:addEventListener("enterFrame",self) 												-- add the run time event listener.
 	self.m_displayGroup = nil 																	-- the associated display group.
+	self.m_executiveIdentifier = true 															-- used to identify an executive object.
 end
 
 --//%	The Executive destructor deletes all objects, checks all indices and lists are clear, and removes the enterFrame listener.
@@ -64,6 +65,7 @@ function Executive:delete()
 	self.m_timerEvents = nil 																	-- remove the timer event table.
 	self.m_messageQueue = nil 																	-- remove the message queue
 	self.m_deleteAllRequested = nil self.m_inUpdate = nil self.e = nil self.m_callFailed = nil	-- tidy up.
+	self.m_executiveIdentifier = nil
 end
 
 --//%	Add a display object to the group.
@@ -140,7 +142,7 @@ function Executive:enterFrame(eventData)
 end 
 
 --//	This creates a class which can be used as a prototype - it is a replacement for the new() method. It returns an instance 
---//	of the ExecutiveBaseClass to be modified, but this instance already has a reference to the executive instance so it can access it.
+--//	of the ExecutiveBaseClass to be modified.
 --//	@baseClass 	[prototype]		Base class to extend from (can be ignored, defaults to ExecutiveBaseClass)
 --//	@return 	[object]		Prototype for modification to produce a class/prototype
 
@@ -442,11 +444,22 @@ ExecutiveBaseClass = Base:new()
 
 --//%	The actual base class constructor. This automatically connects the object to the Executive, and calls the game object constructor
 --//	with the provided data table as initialisation data
---//	@data 	[table]			Data for actual constructor
+--//	@executive 	[table]			Executive object to attach to. This is optional, if it isn't present it must be in data.executive
+--//	@data 		[table]			Data for actual constructor
 
-function ExecutiveBaseClass:initialise(data)
+function ExecutiveBaseClass:initialise(executive,data)
 	-- print("Instantiate",self,data,self.m_executive)
-	if data == nil then return end 																-- if used to prototype, don't initialise the object.
+	if executive == nil then return end 														-- if used to prototype, don't initialise the object.
+	if data == nil then 																		-- there is only one argument
+		if executive.m_executiveIdentifier then 												-- if the one object is an executive
+			data = {} 																			-- data is an empty table
+		else  																					-- if it isn't, it is just the data
+			data = executive  																	-- so put it in the data argument
+			executive = data.executive 															-- the executive must be in there
+			assert(executive ~= nil,"No executive instance for this object instance")
+		end
+	end 
+	self.m_executive = executive 																-- remember the executive object.
 	self.m_executive:attach(self,data) 															-- attach the object and call the constructor.
 end 
 

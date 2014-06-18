@@ -13,9 +13,8 @@
 --- ************************************************************************************************************************************************************************
 
 local Executive = require("system.executive")													-- get Executive class
-local executive = Executive:new() 																-- create instance
 
-local ListenerClass = executive:createClass() 													-- this class has no purpose other than to echo FSM messages
+local ListenerClass = Executive:createClass() 													-- this class has no purpose other than to echo FSM messages
 
 function ListenerClass:constructor(info)
 	self:tag("+fsmlistener")
@@ -25,7 +24,8 @@ function ListenerClass:onMessage(sender,message) 												-- listen for FSM C
 	print("FSM Message : ",message.transaction,message.state,message.previousState)
 end
 
-ListenerClass:new({}) 																			-- create an instance of it.
+local executive = Executive:new()
+ListenerClass:new(executive,{}) 																-- create an instance of it.
 
 local fsm = executive:addLibraryObject("system.fsm",{ 											-- create an FSM
 
