@@ -336,9 +336,17 @@ function GameFactory:open()
 	self.workObject:sendMessage("gameobject",{ event = "start"} ,1000) 							-- when transition complete, start.
 end
 
---local fd = GameFactory:new()
-local fd = TitleScreenFactory:new()
 
-fd:preOpen()
-fd:open()
+--local fd = GameFactory:new()
+--local fd = TitleScreenFactory:new()
+-- fd:preOpen() fd:open()
 --fd:close() fd:postClose()
+
+--- ************************************************************************************************************************************************************************
+--																		Set up main game FSM and start
+--- ************************************************************************************************************************************************************************
+
+Game:addState("start",TitleScreenFactory:new(), { play = { target = "game" } })
+Game:addState("game",GameFactory:new(), { gameover = { target = "start" } })
+Game:start()
+Game:event("play")

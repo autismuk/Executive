@@ -390,11 +390,10 @@ function Executive:queueMessage(recipient,sender,message,delayTime)
 end
 
 --//	Name an object, storing a reference to it in executive.e
---//	@name 		[string]			Name to give it in the object reference store (always l/c)
+--//	@name 		[string]			Name to give it in the object reference store
 --//	@object 	[object]			Object to attach to that reference.
 
 function Executive:nameObject(name,object) 
-	name = name:lower() 																		-- all names are lower case.
 	assert(self.e[name] == nil,"Duplicate reference name "..name)								-- check unused.
 	self.e[name] = object 																		-- store the reference
 end 

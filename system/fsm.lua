@@ -49,6 +49,7 @@ function FSM:start()
 			end 
 		end 
 	end
+	assert(self.fsm[self.current] ~= nil,"Missing first state " .. self.current) 				-- check the first state actually exists.
 	self:announce("enter",self.current,nil,nil) 												-- announce entering first state.
 	return self 																				-- allow chaining.
 end 
@@ -74,7 +75,7 @@ end
 
 function FSM:announce(transaction,state,lastState,data)
 	self:sendMessage(self.fsm.listeners,														-- tell all listener(s) what is being done.
-						{ transaction = transaction, state = state, data = data, previousState = lastState })
+						{ transaction = transaction, state = state, data = data or {}, previousState = lastState })
 end
 
 --// 	Send an event to the FSM, causing a possible change of state.
@@ -103,6 +104,5 @@ end
 function FSM:destructor()
 	self.fsm = nil self.current = nil self.fsmStarted = nil										-- null out references.
 end
-
 
 return FSM

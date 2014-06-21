@@ -81,4 +81,97 @@ function ExecutiveFactory:clean()
 	end 
 end
 
+--- ************************************************************************************************************************************************************************
+--														Executive object which manages the factory classes.
+--- ************************************************************************************************************************************************************************
+
+local ObjectManagerClass = Executive:createClass()
+
+function ObjectManagerClass:constructor()
+	self.m_factoryObjects = {}
+	self:name("objectManager")
+end 
+
+function ObjectManagerClass:addFactoryObject(state,factoryInstance)
+	self.m_factoryObjects[state:lower()] = factoryInstance 
+end 
+
+function ObjectManagerClass:destructor()
+	for state,ref in pairs(self.m_factoryObjects) do 
+		ref:clean() 
+	end 
+	self.m_factoryObjects = nil
+end 
+
+--- ************************************************************************************************************************************************************************
+-- 													Executive object which listens to FSM and responds to changes.
+--- ************************************************************************************************************************************************************************
+
+local GameManagerClass = Executive:createClass()
+
+function GameManagerClass:constructor(info)
+	self:tag("+fsmlistener")
+end
+
+function GameManagerClass:onMessage(sender,message) 												-- listen for FSM Changes
+	print("FSM Message : ",message.transaction,message.state,message.previousState,message.data.target)
+	if message.transaction == "enter" then 
+		if message.previousState == nil then 
+			-- TODO: Switch without transitions.
+		else 
+			-- TODO: identify transition associated with event, and use that to switch
+		end
+	end
+end
+
+--- ************************************************************************************************************************************************************************
+-- 																		Game Class
+--- ************************************************************************************************************************************************************************
+
+
+local Game = Executive:new() 																	-- this is a game class.
+
+function Game:initialise() 
+	GameManagerClass:new(self)
+	ObjectManagerClass:new(self)
+	self:addLibraryObject("system.fsm"):name("fsm")
+end 
+
+function Game:start()
+	self.e.fsm:start()
+end 
+
+function Game:addState(stateName,executiveFactoryInstance,stateDefinition)
+	self.e.fsm:addState(stateName,stateDefinition)
+	self.e.objectManager:addFactoryObject(stateName:lower(),executiveFactoryInstance)
+end 
+
+function Game:getState() 
+	return self.e.fsm:getState() 
+end
+
+function Game:event(eventName) 
+	self.e.fsm:event(eventName) 
+end 
+
+_G.Game = Game:new() 																			-- make a global instance.
+
+--[[
+
+Game is an executive itself.
+It contains single state machine (empty by default) and a method to add states/transitions and the states associated factory class.
+It contains a manager of factory objects which clears them all when deleted if they aren't already, and GCs
+It has an event handler which allows it to change state on demand.
+It has something which listens to the FSM and changes the state accordingly.
+Transition is part of the event
+
+Startup
+
+-- add states, transitions, factory classes
+-- start the FSM
+-- handle the consequences straight
+-- handle them with transitions.
+
+--]]
+
 return ExecutiveFactory 																		-- returns the executivefactory base class.
