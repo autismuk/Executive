@@ -88,19 +88,27 @@ end
 local ObjectManagerClass = Executive:createClass()
 
 function ObjectManagerClass:constructor()
-	self.m_factoryObjects = {}
-	self:name("objectManager")
+	self.m_factoryObjects = {}																		-- empty list of factory instances
+	self:name("objectManager") 																		-- make object available to executive
 end 
 
 function ObjectManagerClass:addFactoryObject(state,factoryInstance)
-	self.m_factoryObjects[state:lower()] = factoryInstance 
+	state = state:lower() 																			-- lower case references
+	assert(self.m_factoryObjects[state] == nil)														-- shouldn't happen !
+	self.m_factoryObjects[state] = factoryInstance 													-- store factory instance
 end 
 
 function ObjectManagerClass:destructor()
-	for state,ref in pairs(self.m_factoryObjects) do 
-		ref:clean() 
+	for state,ref in pairs(self.m_factoryObjects) do 												-- when deleting the game class, we clean all the factory instances
+		ref:clean() 																				-- which is effectively garbage collecting everything.
 	end 
-	self.m_factoryObjects = nil
+	self.m_factoryObjects = nil 																	-- lose the reference
+end 
+
+function ObjectManagerClass:getFactoryInstance(state)
+	local inst = self.m_factoryObjects[state:lower()] 												-- get the instance
+	assert(inst ~= nil,"No factory instance for state "..state) 									-- check it was found
+	return inst 
 end 
 
 --- ************************************************************************************************************************************************************************
@@ -115,10 +123,15 @@ end
 
 function GameManagerClass:onMessage(sender,message) 												-- listen for FSM Changes
 	print("FSM Message : ",message.transaction,message.state,message.previousState,message.data.target)
-	if message.transaction == "enter" then 
-		if message.previousState == nil then 
-			-- TODO: Switch without transitions.
-		else 
+	if message.transaction == "enter" then 															-- only interested in entering classes
+		local factory = self:getExecutive().e.objectManager:getFactoryInstance(message.state) 		-- was there a previous class.
+		if message.previousState == nil then  														-- if not, then go straight into the first state
+			factory:preOpen() 																		-- do pre-open to set up
+			factory:open() 																			-- and open to start.
+			self.m_currentFactoryInstance = factory
+			-- TODO: transition in ?
+		else  																						-- we are transitioning from one state to another.
+			-- TODO: Make the factory object call Game:event()
 			-- TODO: identify transition associated with event, and use that to switch
 		end
 	end
@@ -129,32 +142,32 @@ end
 --- ************************************************************************************************************************************************************************
 
 
-local Game = Executive:new() 																	-- this is a game class.
+local Game = Executive:new() 																		-- this is a game class.
 
 function Game:initialise() 
-	GameManagerClass:new(self)
-	ObjectManagerClass:new(self)
-	self:addLibraryObject("system.fsm"):name("fsm")
+	GameManagerClass:new(self) 																		-- listens for fsm events
+	ObjectManagerClass:new(self) 																	-- manage scene factory instances
+	self:addLibraryObject("system.fsm"):name("fsm") 												-- the fsm - named to be accessed
 end 
 
 function Game:start()
-	self.e.fsm:start()
+	self.e.fsm:start() 																				-- start the fsm.
 end 
 
 function Game:addState(stateName,executiveFactoryInstance,stateDefinition)
-	self.e.fsm:addState(stateName,stateDefinition)
-	self.e.objectManager:addFactoryObject(stateName:lower(),executiveFactoryInstance)
+	self.e.fsm:addState(stateName,stateDefinition) 													-- add definition to the fsm
+	self.e.objectManager:addFactoryObject(stateName:lower(),executiveFactoryInstance) 				-- tell the scene factory manager about the scene factory instance.
 end 
 
 function Game:getState() 
-	return self.e.fsm:getState() 
+	return self.e.fsm:getState()  																	-- return current state
 end
 
 function Game:event(eventName) 
-	self.e.fsm:event(eventName) 
+	self.e.fsm:event(eventName) 																	-- switch to a new event.
 end 
 
-_G.Game = Game:new() 																			-- make a global instance.
+_G.Game = Game:new() 																				-- make a global instance.
 
 --[[
 
