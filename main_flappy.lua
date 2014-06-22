@@ -301,6 +301,7 @@ end
 
 function TitleScreen:start()
 	self.title:addEventListener( "tap",self)
+	--timer.performWithDelay( 2000, function() Game:event("play") end)
 end 
 
 function TitleScreen:tap(e)
@@ -338,12 +339,6 @@ end
 function GameFactory:open()
 	self.workObject:sendMessage("gameobject",{ event = "start"} ,1000) 							-- when transition complete, start.
 end
-
-
---local fd = GameFactory:new()
---local fd = TitleScreenFactory:new()
--- fd:preOpen() fd:open()
---fd:close() fd:postClose()
 
 --- ************************************************************************************************************************************************************************
 --																		Set up main game FSM and start

@@ -165,6 +165,22 @@ function GameManagerClass:onMessage(sender,message) 												-- listen for FS
 							   transition.time or 500) 												-- get time, default to 0.5s
 		end
 	end
+	self:memory()
+end
+
+--//	Put memory information as a little text string at the screen top.
+
+function GameManagerClass:memory()
+	collectgarbage() 																				-- perform GC
+  	local textMem = system.getInfo( "textureMemoryUsed" ) / 1024 									-- get texture memory in kb
+  	local msg =  "Mem:"..math.floor(collectgarbage("count")).. "kb Tex:"..math.floor(textMem).."kb" -- create message
+  	if Game.m_memoryText == nil then  																-- create display object if required.
+  		Game.m_memoryText = display:newText("????",0,0,native.systemFont,24)
+  		Game.m_memoryText.anchorX,Game.m_memoryText.anchorY = 0,0
+  		Game.m_memoryText:setFillColor(0,0.5,1)
+  	end 
+  	Game.m_memoryText.text = msg  																	-- update memory text
+  	Game.m_memoryText:toFront() 																	-- make sure it is on top.
 end
 
 --//	This method is called by the Transaction Manager library when a transaction is completed.
@@ -176,6 +192,7 @@ function GameManagerClass:transitionCompleted()
 	self.m_currentFactoryInstance = self.m_newStateInstance  										-- set current instance to new instance
 	self.m_newStateInstance = nil 																	-- null out the new instance
 	self.m_managerLocked = false 																	-- and we can now change state.
+	self:memory()
 end 
 
 --- ************************************************************************************************************************************************************************
@@ -225,11 +242,5 @@ function Game:event(eventName)
 end 
 
 _G.Game = Game:new() 																				-- make a global instance.
-
---[[
-
--- memory stuff
-
---]]
 
 return ExecutiveFactory 																		-- returns the executivefactory base class.
