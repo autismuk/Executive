@@ -5,17 +5,19 @@
 <p>The Executive Class is the main controller and storage system for objects. It also coordinates updates, timers and asynchronous messaging, which are built in. It uses ObjectLists regularly, which are a table consisting of a count, and a has of objects keyed on references.</p>
 <p>Methods : <a href="#Executive_addLibraryObject"/>addLibraryObject</a>,<a href="#Executive_addMixinObject"/>addMixinObject</a>,<a href="#Executive_createClass"/>createClass</a>,<a href="#Executive_enterFrame"/>enterFrame</a>,<a href="#Executive_nameObject"/>nameObject</a>,<a href="#Executive_query"/>query</a>,<a href="#Executive_queueMessage"/>queueMessage</a>,<a href="#Executive_removeTimer"/>removeTimer</a></p><hr><a name="Executive_(constructor)"></a>
 <a name="Executive_addLibraryObject"></a>
-<h2>addLibraryObject(library,data)</h2>
+<h2>addLibraryObject(library,element,data)</h2>
 <table>
 <tr><td>library</td><td>string</td><td>LUA library to use (e.g. utils.controller)</td></tr>
+<tr><td>element</td><td>string</td><td>Element with in library (optional)</td></tr>
 <tr><td>data</td><td>table</td><td>Data to use in constructor (optional)</td></tr>
 <tr><td>return</td><td>object</td><td>Library object instance.</td></tr>
 </table>
-<p>Add a library defined object. The library should return the class prototype. An instance of this class is created using the supplied constructor data, it is added as a mixin object.</p>
+<p>Add a library defined object. The library should return the class prototype or a table of prototypes (if element is used) An instance of this class is created using the supplied constructor data, it is added as a mixin object.</p>
 <a name="Executive_addMixinObject"></a>
-<h2>addMixinObject(object)</h2>
+<h2>addMixinObject(object,data)</h2>
 <table>
 <tr><td>object</td><td>object</td><td>Mixin object to be decorated.</td></tr>
+<tr><td>data</td><td>object</td><td>Optional data for the constructor call.</td></tr>
 <tr><td>return</td><td>object</td><td>Object that was decorated.</td></tr>
 </table>
 <p>Add a mixin object to the system. Some objects may be created by modifying other classes via decoration, these will not inherit either the executive member or the member functions. This method decorates the mixin with both. Do not use this with game objects, which are added automatically by the constructor.</p>
@@ -28,7 +30,7 @@
 <tr><td>baseClass</td><td>prototype</td><td>Base class to extend from (can be ignored, defaults to ExecutiveBaseClass)</td></tr>
 <tr><td>return</td><td>object</td><td>Prototype for modification to produce a class/prototype</td></tr>
 </table>
-<p>This creates a class which can be used as a prototype - it is a replacement for the new() method. It returns an instance of the ExecutiveBaseClass to be modified, but this instance already has a reference to the executive instance so it can access it.</p>
+<p>This creates a class which can be used as a prototype - it is a replacement for the new() method. It returns an instance of the ExecutiveBaseClass to be modified.</p>
 <a name="Executive_decorateMixinObject"></a>
 <a name="Executive_delete"></a>
 <a name="Executive_detach"></a>
@@ -39,11 +41,12 @@
 </table>
 <p>Handle enterFrame events and dispatch them via update, process messages and timers. Sends updates to object:onUpdate(deltaTime,deltaMS,systemTime), timer events to object:onTimer(tag,timerID) and messages to object:onMessage(from,message).</p>
 <a name="Executive_fire"></a>
+<a name="Executive_insert"></a>
 <a name="Executive_isGameObjectSubclass"></a>
 <a name="Executive_nameObject"></a>
 <h2>nameObject(name,object)</h2>
 <table>
-<tr><td>name</td><td>string</td><td>Name to give it in the object reference store (always l/c)</td></tr>
+<tr><td>name</td><td>string</td><td>Name to give it in the object reference store</td></tr>
 <tr><td>object</td><td>object</td><td>Object to attach to that reference.</td></tr>
 </table>
 <p>Name an object, storing a reference to it in executive.e</p>
@@ -77,7 +80,7 @@
 <hr><h1>ExecutiveBaseClass</h1>
 <p><h3>Extends Base</h3></p>
 <p></p>
-<p>Methods : <a href="#ExecutiveBaseClass_addRepeatingTimer"/>addRepeatingTimer</a>,<a href="#ExecutiveBaseClass_addSingleTimer"/>addSingleTimer</a>,<a href="#ExecutiveBaseClass_addTimer"/>addTimer</a>,<a href="#ExecutiveBaseClass_constructor"/>constructor</a>,<a href="#ExecutiveBaseClass_delete"/>delete</a>,<a href="#ExecutiveBaseClass_destructor"/>destructor</a>,<a href="#ExecutiveBaseClass_getExecutive"/>getExecutive</a>,<a href="#ExecutiveBaseClass_isAlive"/>isAlive</a>,<a href="#ExecutiveBaseClass_name"/>name</a>,<a href="#ExecutiveBaseClass_query"/>query</a>,<a href="#ExecutiveBaseClass_removeTimer"/>removeTimer</a>,<a href="#ExecutiveBaseClass_sendMessage"/>sendMessage</a>,<a href="#ExecutiveBaseClass_tag"/>tag</a></p><hr><a name="ExecutiveBaseClass_(constructor)"></a>
+<p>Methods : <a href="#ExecutiveBaseClass_addRepeatingTimer"/>addRepeatingTimer</a>,<a href="#ExecutiveBaseClass_addSingleTimer"/>addSingleTimer</a>,<a href="#ExecutiveBaseClass_addTimer"/>addTimer</a>,<a href="#ExecutiveBaseClass_constructor"/>constructor</a>,<a href="#ExecutiveBaseClass_delete"/>delete</a>,<a href="#ExecutiveBaseClass_destructor"/>destructor</a>,<a href="#ExecutiveBaseClass_getExecutive"/>getExecutive</a>,<a href="#ExecutiveBaseClass_insert"/>insert</a>,<a href="#ExecutiveBaseClass_isAlive"/>isAlive</a>,<a href="#ExecutiveBaseClass_name"/>name</a>,<a href="#ExecutiveBaseClass_query"/>query</a>,<a href="#ExecutiveBaseClass_removeTimer"/>removeTimer</a>,<a href="#ExecutiveBaseClass_sendMessage"/>sendMessage</a>,<a href="#ExecutiveBaseClass_tag"/>tag</a></p><hr><a name="ExecutiveBaseClass_(constructor)"></a>
 <a name="ExecutiveBaseClass_addRepeatingTimer"></a>
 <h2>addRepeatingTimer(delay,tag,target)</h2>
 <table>
@@ -124,6 +127,12 @@
 <tr><td>return</td><td>executive</td><td>Executive object controlling this object</td></tr>
 </table>
 <p>Get the current executive reference</p>
+<a name="ExecutiveBaseClass_insert"></a>
+<h2>insert(...)</h2>
+<table>
+<tr><td>...</td><td></td><td></td></tr>
+</table>
+<p>Add a display object to the group associated with this object's executive.</p>
 <a name="ExecutiveBaseClass_isAlive"></a>
 <h2>isAlive()</h2>
 <table>
