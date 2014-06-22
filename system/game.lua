@@ -128,10 +128,16 @@ function GameManagerClass:onMessage(sender,message) 												-- listen for FS
 		if message.previousState == nil then  														-- if not, then go straight into the first state
 			factory:preOpen() 																		-- do pre-open to set up
 			factory:open() 																			-- and open to start.
+			print("Opened...")
 			self.m_currentFactoryInstance = factory
 			-- TODO: transition in ?
 		else  																						-- we are transitioning from one state to another.
-			-- TODO: Make the factory object call Game:event()
+			self.m_currentFactoryInstance:close()
+			self.m_currentFactoryInstance:postClose()
+			local factory = self:getExecutive().e.objectManager:getFactoryInstance(message.state)
+			factory:preOpen()
+			factory:open()
+			self.m_currentFactoryInstance = factory
 			-- TODO: identify transition associated with event, and use that to switch
 		end
 	end
@@ -141,7 +147,6 @@ end
 -- 																		Game Class
 --- ************************************************************************************************************************************************************************
 
-
 local Game = Executive:new() 																		-- this is a game class.
 
 function Game:initialise() 
@@ -150,8 +155,8 @@ function Game:initialise()
 	self:addLibraryObject("system.fsm"):name("fsm") 												-- the fsm - named to be accessed
 end 
 
-function Game:start()
-	self.e.fsm:start() 																				-- start the fsm.
+function Game:start(overrideState)
+	self.e.fsm:start(overrideState) 																-- start the fsm.
 end 
 
 function Game:addState(stateName,executiveFactoryInstance,stateDefinition)
@@ -171,19 +176,9 @@ _G.Game = Game:new() 																				-- make a global instance.
 
 --[[
 
-Game is an executive itself.
-It contains single state machine (empty by default) and a method to add states/transitions and the states associated factory class.
-It contains a manager of factory objects which clears them all when deleted if they aren't already, and GCs
-It has an event handler which allows it to change state on demand.
-It has something which listens to the FSM and changes the state accordingly.
-Transition is part of the event
-
-Startup
-
--- add states, transitions, factory classes
--- start the FSM
--- handle the consequences straight
 -- handle them with transitions.
+-- transitions out of sequence (e.g. not between open and close.) causes error.
+-- memory stuff
 
 --]]
 

@@ -36,9 +36,10 @@ function FSM:constructor(info)
 end 
 
 --//	Start an FSM, validating it first
+--//	@override 	[string]	Optional override for start state.
 --//	@return 	[FSM]		Self, allowing chaining.
 
-function FSM:start()
+function FSM:start(override)
 	assert(not self.fsmStarted,"Cannot restart fsm")											-- can't start it twice
 	self.fsmStarted = true 																		-- mark it started
 	for key,value in pairs(self.fsm) do  														-- work through all the states
@@ -49,6 +50,7 @@ function FSM:start()
 			end 
 		end 
 	end
+	self.current = override or self.current 													-- work out the first state.
 	assert(self.fsm[self.current] ~= nil,"Missing first state " .. self.current) 				-- check the first state actually exists.
 	self:announce("enter",self.current,nil,nil) 												-- announce entering first state.
 	return self 																				-- allow chaining.

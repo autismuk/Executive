@@ -55,7 +55,7 @@ end
 local EndMessage = Executive:createClass()
 
 local function spinner(modifier, cPos, info)
-	local w = math.floor(info.elapsed/720) % info.length + 1 				
+	local w = math.floor(info.elapsed/360) % info.length + 1 				
 	if info.index == w then  												
 		local newScale = 2 * (info.elapsed % 360) / 360 - 1 				
 		modifier.xScale = newScale 					
@@ -68,7 +68,13 @@ function EndMessage:constructor()
 	self.gameOverText.alpha = 0
 	transition.to(self.gameOverText, { time = 2000, alpha = 1})
 	self:insert(self.gameOverText)
+	self:addSingleTimer(6000)
 end 
+
+function EndMessage:onTimer()
+	Game:event("gameover")
+end 
+
 function EndMessage:destructor()
 	self.gameOverText:removeSelf()
 end 
@@ -301,7 +307,7 @@ function TitleScreen:start()
 end 
 
 function TitleScreen:tap(e)
-	print("Start")
+	Game:event("play")
 end 
 
 local TitleScreenFactory = ExecutiveFactory:new()
@@ -349,4 +355,3 @@ end
 Game:addState("start",TitleScreenFactory:new(), { play = { target = "game" } })
 Game:addState("game",GameFactory:new(), { gameover = { target = "start" } })
 Game:start()
-Game:event("play")
