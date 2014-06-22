@@ -350,5 +350,5 @@ end
 --- ************************************************************************************************************************************************************************
 
 Game:addState("start",TitleScreenFactory:new(), { play = { target = "game" } })
-Game:addState("game",GameFactory:new(), { gameover = { target = "start" } })
+Game:addState("game",GameFactory:new(), { gameover = { target = "start", transition = { effect = "slidedown", time = 1000 } } })
 Game:start()

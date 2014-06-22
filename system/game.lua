@@ -88,10 +88,16 @@ end
 
 local ObjectManagerClass = Executive:createClass()
 
+--//	Create an empty object mananger class.
+
 function ObjectManagerClass:constructor()
 	self.m_factoryObjects = {}																		-- empty list of factory instances
 	self:name("objectManager") 																		-- make object available to executive
 end 
+
+--//	Add a factory instance attached to a given state name.
+--//	@state 				[string] 		Name of state
+--//	@factoryInstance 	[factory]		instance of executive factory.
 
 function ObjectManagerClass:addFactoryObject(state,factoryInstance)
 	state = state:lower() 																			-- lower case references
@@ -99,12 +105,18 @@ function ObjectManagerClass:addFactoryObject(state,factoryInstance)
 	self.m_factoryObjects[state] = factoryInstance 													-- store factory instance
 end 
 
+--//	Tidy up factory instances.
+
 function ObjectManagerClass:destructor()
 	for state,ref in pairs(self.m_factoryObjects) do 												-- when deleting the game class, we clean all the factory instances
 		ref:clean() 																				-- which is effectively garbage collecting everything.
 	end 
 	self.m_factoryObjects = nil 																	-- lose the reference
 end 
+
+--//	Retrieve factory instance for given named state.
+--//	@state 	[string]		Name of state
+--//	@return [factory]		Factory instance associated with it.
 
 function ObjectManagerClass:getFactoryInstance(state)
 	local inst = self.m_factoryObjects[state:lower()] 												-- get the instance
@@ -118,44 +130,62 @@ end
 
 local GameManagerClass = Executive:createClass()
 
+--//	Constructor for Game manager.
+
 function GameManagerClass:constructor(info)
 	self:tag("+fsmlistener")
 	self.m_managerLocked = false 																	-- set when in transition and event will not work.
 end
 
+--//	Game Manager message handler. Receives state changes from the game's FSM.
+--//	@sender 	[object] 			where it came from.
+--//	@message 	[message]			executive message describing fsm state changes.
+
 function GameManagerClass:onMessage(sender,message) 												-- listen for FSM Changes
 	--print("FSM Message : ",message.transaction,message.state,message.previousState,message.data.target)
-	assert(not self.m_managerLocked,"Sending state changes during transition to ",message.state)
+	assert(not self.m_managerLocked,"Sending state changes during transition to ",message.state) 	-- cannot state change in a transition.
 	if message.transaction == "enter" then 															-- only interested in entering classes
 		local factory = self:getExecutive().e.objectManager:getFactoryInstance(message.state) 		-- was there a previous class.
 		if message.previousState == nil then  														-- if not, then go straight into the first state
 			factory:preOpen() 																		-- do pre-open to set up
 			factory:open() 																			-- and open to start.
-			self.m_currentFactoryInstance = factory
-			-- TODO: transition in ?
+			Transition:execute("fade",self,nil,factory:getExecutive():getGroup(),300)				-- fade it in.
+			self.m_currentFactoryInstance = factory 												
 		else  																						-- we are transitioning from one state to another.
-			self.m_newStateInstance = self:getExecutive().e.objectManager:getFactoryInstance(message.state)
-			self.m_newStateInstance:preOpen()
-			self.m_currentFactoryInstance:close()
-			self.m_managerLocked = true
-			Transition:execute("slideRight",self,self.m_currentFactoryInstance:getExecutive():getGroup(),self.m_newStateInstance:getExecutive():getGroup(),1400)
+			self.m_newStateInstance = 																-- get new factory instance
+						self:getExecutive().e.objectManager:getFactoryInstance(message.state)
+			self.m_newStateInstance:preOpen() 														-- pre-open it.
+			self.m_currentFactoryInstance:close() 													-- close the currently opening one
+			self.m_managerLocked = true 															-- lock against changes.
+			local transition = message.data.transition or {} 										-- get transition, empty default
+			Transition:execute(transition.effect or "fade", 										-- start transition, defaults to fade
+							   self, 																-- report completion to self.
+							   self.m_currentFactoryInstance:getExecutive():getGroup(), 			-- from the current group
+							   self.m_newStateInstance:getExecutive():getGroup(), 					-- to the new one
+							   transition.time or 500) 												-- get time, default to 0.5s
 		end
 	end
 end
 
+--//	This method is called by the Transaction Manager library when a transaction is completed.
+
 function GameManagerClass:transitionCompleted()
-	self.m_currentFactoryInstance:postClose()
-	self.m_newStateInstance:open()
-	self.m_currentFactoryInstance = self.m_newStateInstance 
-	self.m_newStateInstance = nil
-	self.m_managerLocked = false
+	if not self.m_managerLocked then return end 													-- if not locked it's the starting transition.
+	self.m_currentFactoryInstance:postClose() 														-- so, finally close out the old state.
+	self.m_newStateInstance:open()	 																-- and open the new one
+	self.m_currentFactoryInstance = self.m_newStateInstance  										-- set current instance to new instance
+	self.m_newStateInstance = nil 																	-- null out the new instance
+	self.m_managerLocked = false 																	-- and we can now change state.
 end 
 
 --- ************************************************************************************************************************************************************************
--- 																		Game Class
+-- 	Game Class. This is a singleton containing a finite state machine representing scene flow, a listener that listens to the FSM and changes scenes accordingly,
+--	and an object that stores the executive factory instances, whose preOpen/open/close/preClose/clean methods are called.
 --- ************************************************************************************************************************************************************************
 
 local Game = Executive:new() 																		-- this is a game class.
+
+--//	Instantiate the game class.
 
 function Game:initialise() 
 	GameManagerClass:new(self) 																		-- listens for fsm events
@@ -163,21 +193,35 @@ function Game:initialise()
 	self:addLibraryObject("system.fsm"):name("fsm") 												-- the fsm - named to be accessed
 end 
 
+--//	Start the game.
+--//	@overrideState [string]		State to go to first, can override that in the FSM for debugging.
+
 function Game:start(overrideState)
 	self.e.fsm:start(overrideState) 																-- start the fsm.
 end 
+
+--//	Add a new state to the Game's FSM. Each FSM state has an associated executiveFactory object which manages its executive class.
+--//	@stateName 				  [string]				Name of state to add.
+--//	@executiveFactoryInstance [factoryInstance]		Executive Factory instance associated with this state.
+--//	@stateDefinition 		  [stateDef]			State definition, events -> new states. Also contains transaction information.
 
 function Game:addState(stateName,executiveFactoryInstance,stateDefinition)
 	self.e.fsm:addState(stateName,stateDefinition) 													-- add definition to the fsm
 	self.e.objectManager:addFactoryObject(stateName:lower(),executiveFactoryInstance) 				-- tell the scene factory manager about the scene factory instance.
 end 
 
+--//	Return the current state
+--//	@return 	[string] 	state name
+
 function Game:getState() 
 	return self.e.fsm:getState()  																	-- return current state
 end
 
+--//	Apply an event to the Game's FSM.
+--//	@eventName 	[string] 	Event name to apply.
+
 function Game:event(eventName) 
-	self.e.fsm:event(eventName) 																	-- switch to a new event.
+	self.e.fsm:event(eventName) 																	-- switch to a new state, probably.
 end 
 
 _G.Game = Game:new() 																				-- make a global instance.
@@ -185,7 +229,6 @@ _G.Game = Game:new() 																				-- make a global instance.
 --[[
 
 -- memory stuff
--- get transition from FSM, with defaults.
 
 --]]
 
