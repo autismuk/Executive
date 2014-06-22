@@ -241,6 +241,6 @@ function Game:event(eventName)
 	self.e.fsm:event(eventName) 																	-- switch to a new state, probably.
 end 
 
-_G.Game = Game:new() 																				-- make a global instance.
+_G.Game = Game:new({}) 																				-- make a global instance.
 
 return ExecutiveFactory 																		-- returns the executivefactory base class.
