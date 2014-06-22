@@ -9,6 +9,7 @@
 --- ************************************************************************************************************************************************************************
 
 local Executive = require("system.executive")													-- Needs the Executive class.
+local Transition = require("system.transitions")												-- and the transition manager.
 
 --- ************************************************************************************************************************************************************************
 --//	This is the base class for the executive factory, which is a factory class which creates and manages executives, each executive being a 'scene' in the game.
@@ -119,29 +120,36 @@ local GameManagerClass = Executive:createClass()
 
 function GameManagerClass:constructor(info)
 	self:tag("+fsmlistener")
+	self.m_managerLocked = false 																	-- set when in transition and event will not work.
 end
 
 function GameManagerClass:onMessage(sender,message) 												-- listen for FSM Changes
-	print("FSM Message : ",message.transaction,message.state,message.previousState,message.data.target)
+	--print("FSM Message : ",message.transaction,message.state,message.previousState,message.data.target)
+	assert(not self.m_managerLocked,"Sending state changes during transition to ",message.state)
 	if message.transaction == "enter" then 															-- only interested in entering classes
 		local factory = self:getExecutive().e.objectManager:getFactoryInstance(message.state) 		-- was there a previous class.
 		if message.previousState == nil then  														-- if not, then go straight into the first state
 			factory:preOpen() 																		-- do pre-open to set up
 			factory:open() 																			-- and open to start.
-			print("Opened...")
 			self.m_currentFactoryInstance = factory
 			-- TODO: transition in ?
 		else  																						-- we are transitioning from one state to another.
+			self.m_newStateInstance = self:getExecutive().e.objectManager:getFactoryInstance(message.state)
+			self.m_newStateInstance:preOpen()
 			self.m_currentFactoryInstance:close()
-			self.m_currentFactoryInstance:postClose()
-			local factory = self:getExecutive().e.objectManager:getFactoryInstance(message.state)
-			factory:preOpen()
-			factory:open()
-			self.m_currentFactoryInstance = factory
-			-- TODO: identify transition associated with event, and use that to switch
+			self.m_managerLocked = true
+			Transition:execute("slideRight",self,self.m_currentFactoryInstance:getExecutive():getGroup(),self.m_newStateInstance:getExecutive():getGroup(),1400)
 		end
 	end
 end
+
+function GameManagerClass:transitionCompleted()
+	self.m_currentFactoryInstance:postClose()
+	self.m_newStateInstance:open()
+	self.m_currentFactoryInstance = self.m_newStateInstance 
+	self.m_newStateInstance = nil
+	self.m_managerLocked = false
+end 
 
 --- ************************************************************************************************************************************************************************
 -- 																		Game Class
@@ -176,9 +184,8 @@ _G.Game = Game:new() 																				-- make a global instance.
 
 --[[
 
--- handle them with transitions.
--- transitions out of sequence (e.g. not between open and close.) causes error.
 -- memory stuff
+-- get transition from FSM, with defaults.
 
 --]]
 

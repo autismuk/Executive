@@ -287,11 +287,10 @@ end
 local TitleScreen = Executive:createClass()
 
 function TitleScreen:constructor()
-	self.title = display.newBitmapText("Flappy Sphere",display.contentWidth/2,-300,"font2",72)
+	self.title = display.newBitmapText("Flappy Sphere",display.contentWidth/2,display.contentHeight/2,"font2",72)
 	self.title.yScale = 3
 	self.descr = display.newText("A 'Corona Executive' Demo",display.contentWidth / 2,display.contentHeight - 40,system.nativeFont,32)
-	self.descr.alpha = 0
-	self:insert(self.title)
+	self:insert(self.title,self.descr)
 end 
 
 function TitleScreen:destructor()
@@ -301,8 +300,6 @@ function TitleScreen:destructor()
 end 
 
 function TitleScreen:start()
-	transition.to(self.title,{ time = 1500, y = display.contentHeight * 0.55, transition = easing.outElastic,
-		onComplete = function() transition.to(self.descr, { time = 500,alpha = 1}) end })
 	self.title:addEventListener( "tap",self)
 end 
 

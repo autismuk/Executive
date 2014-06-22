@@ -68,14 +68,23 @@ function Executive:delete()
 	self.m_executiveIdentifier = nil
 end
 
---//%	Add a display object to the group.
+--//	Add a display object to the group.
 --//	@object 	[display object] 		display object to be attached to the executive's group.
 
 function Executive:insert(object)
 	if self.m_displayGroup == nil then 															-- create group if it doesn't already exist.
-		self.m_displayGroup = display.newGroup() 
+		self.m_displayGroup = display.newContainer(display.contentWidth,display.contentHeight) 	-- note, we are now using a container because
+		self.m_displayGroup.anchorX,self.m_displayGroup.anchorY = 0,0 							-- that clips offscreen objects.
+		self.m_displayGroup.anchorChildren = false
 	end 			
 	self.m_displayGroup:insert(object) 															-- insert this object into it.
+end 
+
+--//	Get the executive's display group.
+--//	@return [display Group] 			executive's display group.
+
+function Executive:getGroup() 
+	return self.m_displayGroup 
 end 
 
 --//%	Utility function which returns the number of items in a table
