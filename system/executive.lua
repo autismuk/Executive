@@ -38,6 +38,7 @@ function Executive:initialise()
 	Runtime:addEventListener("enterFrame",self) 												-- add the run time event listener.
 	self.m_displayGroup = nil 																	-- the associated display group.
 	self.m_executiveIdentifier = true 															-- used to identify an executive object.
+	self.m_enabled = true 																		-- true if updates,messages,timers are disabled.
 end
 
 --//%	The Executive destructor deletes all objects, checks all indices and lists are clear, and removes the enterFrame listener.
@@ -65,7 +66,7 @@ function Executive:delete()
 	self.m_timerEvents = nil 																	-- remove the timer event table.
 	self.m_messageQueue = nil 																	-- remove the message queue
 	self.m_deleteAllRequested = nil self.m_inUpdate = nil self.e = nil self.m_callFailed = nil	-- tidy up.
-	self.m_executiveIdentifier = nil
+	self.m_executiveIdentifier = nil self.m_enabled = nil
 end
 
 --//	Add a display object to the group.
@@ -103,6 +104,7 @@ end
 --//	@eventData [table]			Event data.
 
 function Executive:enterFrame(eventData) 
+	if not self.m_enabled then return end 														-- return if disabled.
 	self.m_inUpdate = true 																		-- in update - this blocks delete() 
 	local current = system.getTimer() 															-- get system time
 	local updates = self.m_indices.update 														-- get the updateables list
@@ -355,6 +357,13 @@ function Executive:query(tagList)
 		end 
 	end
 	return result 																				-- return the result set.
+end 
+
+--//%	Enable or disable the systems (update, message etc.) in this executive.
+--//	@state [boolean]					New enable state.
+
+function Executive:enableSystems(state)
+	self.m_enabled = state or false 
 end 
 
 Executive.nextFreeTimerID = 1000 																-- static member, next free timer ID.

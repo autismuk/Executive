@@ -316,9 +316,6 @@ local TitleScreenFactory = ExecutiveFactory:new()
 
 function TitleScreenFactory:preOpen()
 	self.title = TitleScreen:new(self:getExecutive())
-end 
-
-function TitleScreenFactory:open()
 	self.title:start()
 end 
 
@@ -338,11 +335,8 @@ function GameFactory:preOpen()																	-- before opening, create all the
 	Background:new({ executive = exec })
 	Bird:new(exec,{ gravity = 100*1 })
 	Score:new(exec,{})
-end 
-
-function GameFactory:open()
 	self.workObject:sendMessage("gameobject",{ event = "start"} ,1000) 							-- when transition complete, start.
-end
+end 
 
 --- ************************************************************************************************************************************************************************
 --																		Set up main game FSM and start

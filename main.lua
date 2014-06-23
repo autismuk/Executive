@@ -16,27 +16,8 @@ require("main_flappy")
 --require("main_fsm")
 --[[
 
--- stop updates, messages etc. during transitions and disable ?
+-- stop updates, messages etc. during transitions and blocker on top.
 -- fix it all to work.
 -- adjust the documentation accordingly.
 
-local Executive = require("system.executive")
-local ex = Executive:new()
-
-local demo = display.newRect(110,110,100,100)
-
-
-function demo:destructor() self:removeSelf() end
-
-function demo:onMessage(sender,body) print(sender,body.a,body.b) end
-
-function demo:sendMessage(a,b) print("I have a sendMessage()") end
-
-ex:addMixinObject(demo)
-demo:tag("fred")
-x = demo:query("fred")
-print(x.count,x.objects)
-for k,v in pairs(x.objects) do v:setFillColor(1,0,0) end
-demo:sendMessage("fred",{ a = 1,b = 2})
---demo:delete()
 --]]

@@ -157,16 +157,28 @@ function GameManagerClass:onMessage(sender,message) 												-- listen for FS
 			self.m_newStateInstance:preOpen() 														-- pre-open it.
 			self.m_currentFactoryInstance:close() 													-- close the currently opening one
 			self.m_managerLocked = true 															-- lock against changes.
+			self.m_newStateInstance:getExecutive():enableSystems(false) 							-- disable updates, etc.
+			self.m_currentFactoryInstance:getExecutive():enableSystems(false)
 			local transition = message.data.transition or {} 										-- get transition, empty default
 			Transition:execute(transition.effect or "fade", 										-- start transition, defaults to fade
 							   self, 																-- report completion to self.
 							   self.m_currentFactoryInstance:getExecutive():getGroup(), 			-- from the current group
 							   self.m_newStateInstance:getExecutive():getGroup(), 					-- to the new one
 							   transition.time or 500) 												-- get time, default to 0.5s
+
+			self.m_coverScreen = display.newRect(0,0,display.contentWidth,display.contentHeight) 	-- create a rectangle which sinks screen events
+			self.m_coverScreen.anchorX,self.m_coverScreen.anchorY = 0,0
+			self.m_coverScreen.alpha = 0.01 														-- nearly, but not quite, invisible.
+			self.m_coverScreen:toFront() 															-- on top
+			self.m_coverScreen:addEventListener("touch",self) 										-- and it grabs touch and tap events.
+			self.m_coverScreen:addEventListener("tap",self)
 		end
 	end
 	self:memory()
 end
+
+function GameManagerClass:tap(e) return true end 													-- these sink screen events.
+function GameManagerClass:touch(e) return true end 
 
 --//	Put memory information as a little text string at the screen top.
 
@@ -187,6 +199,11 @@ end
 
 function GameManagerClass:transitionCompleted()
 	if not self.m_managerLocked then return end 													-- if not locked it's the starting transition.
+	self.m_coverScreen:removeEventListener("touch",self) 											-- remove the tap/touch blocking rectangle.
+	self.m_coverScreen:removeEventListener("tap",self)
+	self.m_coverScreen:removeSelf() 																
+	self.m_newStateInstance:getExecutive():enableSystems(true) 										-- enable updates, etc.
+	self.m_currentFactoryInstance:getExecutive():enableSystems(true)
 	self.m_currentFactoryInstance:postClose() 														-- so, finally close out the old state.
 	self.m_newStateInstance:open()	 																-- and open the new one
 	self.m_currentFactoryInstance = self.m_newStateInstance  										-- set current instance to new instance
