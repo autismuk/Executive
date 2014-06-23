@@ -16,6 +16,10 @@ require("main_flappy")
 --require("main_fsm")
 --[[
 
+-- stop updates, messages etc. during transitions and disable ?
+-- fix it all to work.
+-- adjust the documentation accordingly.
+
 local Executive = require("system.executive")
 local ex = Executive:new()
 
