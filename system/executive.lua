@@ -595,4 +595,16 @@ function ExecutiveBaseClass:getExecutive()
 	return self.m_executive 
 end
 
+--//	Add a library defined object. The library should return the class prototype or a table of prototypes (if element is used)
+--//	An instance of this class is created using the supplied constructor data, it is added as a mixin object.
+--//	@library 	[string]		LUA library to use (e.g. utils.controller)
+--//	@element 	[string]		Element with in library (optional)
+--//	@data 		[table]			Data to use in constructor (optional)
+--//	@return 	[object]		Library object instance.
+
+function ExecutiveBaseClass:addLibraryObject(library,element,data)
+	return self.m_executive:addLibraryObject(library,element,data)
+end 
+
+
 return Executive 

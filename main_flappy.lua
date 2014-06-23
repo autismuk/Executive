@@ -198,10 +198,10 @@ end
 
 function Bird:flapOver() 
 	if not self:isAlive() then return end
-	self:getExecutive():addLibraryObject("utils.particle",										-- from the utils.particle library
-										 "ShortEmitter", 										-- short emitter
-										 { emitter = "bomb",time = 1000, 						-- these constructor parameters
-										 		x = self.bird.x,y = self.bird.y })
+	self:addLibraryObject("utils.particle",														-- from the utils.particle library
+			 			  "ShortEmitter", 														-- short emitter
+						  { emitter = "bomb",time = 1000, 										-- these constructor parameters
+						  x = self.bird.x,y = self.bird.y })
 
 	self:delete() 																				-- kill the bird.															
 	if self:query("bird").count == 0 then 														-- all birds dead ?

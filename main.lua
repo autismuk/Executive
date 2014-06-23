@@ -12,9 +12,10 @@
 
 --require("main_pong")
 --require("bully")
---require("main_flappy")
+require("main_flappy")
 --require("main_fsm")
 --[[
+
 local Executive = require("system.executive")
 local ex = Executive:new()
 
