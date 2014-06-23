@@ -123,7 +123,7 @@ function Executive:enterFrame(eventData)
 		local event = self.m_timerEvents[1] 													-- get the event.
 		self:fire(event.target,"onTimer",event.tag,event.id) 									-- fire the timer event.
 		event.count = math.max(event.count - 1,-1) 												-- reduce count, bottom out at minus 1.
-		if event.count == 0 then  																-- has it finished.
+		if event.count == 0 or (not event.target:isAlive()) then  								-- has it finished.
 			table.remove(self.m_timerEvents,1) 													-- then just throw it away.
 		else
 			event.time = event.delay 															-- update the next fire time
