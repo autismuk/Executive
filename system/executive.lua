@@ -236,6 +236,9 @@ function Executive:decorateMixinObject(object)
 	for k,v in pairs(ExecutiveBaseClass) do 													-- scan through the class
 		if type(v) == "function" then 															-- only decorate functions.
 			if Executive.mixinExclusion[k] == nil then 											-- if it is not in the exclusion list
+				if object[k] ~= nil then 
+					print("Executive Warning : mixin already has "..k.." member/method")
+				end
 				object[k] = object[k] or ExecutiveBaseClass[k]  								-- add it in if it isn't there already.
 			end
 		end

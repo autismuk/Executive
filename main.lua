@@ -12,27 +12,26 @@
 
 --require("main_pong")
 --require("bully")
-require("main_flappy")
+--require("main_flappy")
 --require("main_fsm")
-
-
 --[[
--- TODO: timer knows sender ?
--- TODO: Warning if decoration overrides.
-
 local Executive = require("system.executive")
 local ex = Executive:new()
-local class = ex:createClass()
 
-function class:constructor(data)
-	print("Constructor")
-	local id = self:addRepeatingTimer(500,"tag!")
-end 
+local demo = display.newRect(110,110,100,100)
 
-function class:onTimer(tag,id)
-	print("Fired",tag,id)
-end 
 
-demo = class:new(ex,{})
-demo:delete()
+function demo:destructor() self:removeSelf() end
+
+function demo:onMessage(sender,body) print(sender,body.a,body.b) end
+
+function demo:sendMessage(a,b) print("I have a sendMessage()") end
+
+ex:addMixinObject(demo)
+demo:tag("fred")
+x = demo:query("fred")
+print(x.count,x.objects)
+for k,v in pairs(x.objects) do v:setFillColor(1,0,0) end
+demo:sendMessage("fred",{ a = 1,b = 2})
+--demo:delete()
 --]]
