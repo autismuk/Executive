@@ -14,10 +14,3 @@
 --require("bully")
 require("main_flappy")
 --require("main_fsm")
---[[
-
--- stop updates, messages etc. during transitions and blocker on top.
--- fix it all to work.
--- adjust the documentation accordingly.
-
---]]
