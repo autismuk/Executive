@@ -17,11 +17,18 @@ local Transition = require("system.transitions")												-- and the transitio
 
 local ExecutiveFactory = Base:new()
 
+--//	Constructor
+--//	@data 	[table]		optional data for setting up executive.
+
+function ExecutiveFactory:initialise(data)
+	self.m_data = data or {} 																	-- data passed in factory construcot
+end 
+	
 --//	First call the constructor for long term resources if this hasn't already been done. Check to see if the object has been instantiated, if not create the executive
 
 function ExecutiveFactory:instantiate()
 	if self.m_constructorCalled == nil then 													-- are the long term resources loaded
-		self:constructor() 																		-- no, call the long term resource loader, constructor
+		self:constructor(self.m_data) 															-- no, call the long term resource loader, constructor
 		self.m_constructorCalled = true  														-- mark as having occurred
 	end
 	if self.m_executive == nil then 															-- created an executive yet for this object
@@ -39,25 +46,29 @@ end
 
 --//	Pre-open phase. This method will be called when the scene is switched to, but before the transition has started. This should create objects
 --//	but not activate them, so the game screen is up but not actually doing anything, so it can be transitioned in.
+--//	@data 	[table]		optional data for setting up executive.
 
-function ExecutiveFactory:preOpen() 
+function ExecutiveFactory:preOpen(data) 
 	self:instantiate() 																			-- Check to see if factory has been started
 end 
 
 --//	Open phase. This is called after the transition to this scene has finished, and should start the actual game.
+--//	@data 	[table]		optional data for setting up executive.
 
-function ExecutiveFactory:open() end 
+function ExecutiveFactory:open(data) end 
 
 --//	Close phase. When the running executive has decided that this scene is over, and it is going to end, this method will be called once the 
 --//	Game's FSM has decided to switch to another scene. It normally should not be touched - it is usually the responsibility of the executive 
 --//	to stop itself from running.
+--//	@data 	[table]		optional data for setting up executive.
 
-function ExecutiveFactory:close() end 
+function ExecutiveFactory:close(data) end 
 
 --//	This is called after the transition to the next screen has occurred, and should normally not be touched - it removes the executive object.
 --//	thus removing all the attached objects.
+--//	@data 	[table]		optional data for setting up executive.
 
-function ExecutiveFactory:postClose() 
+function ExecutiveFactory:postClose(data) 
 	if self.m_executive ~= nil then 															-- do we have an executive ?
 		self.m_executive:delete()																-- if so, get rid of it.
 		self.m_executive = nil  																-- and null its pointer
@@ -65,19 +76,21 @@ function ExecutiveFactory:postClose()
 end 
 
 --//	The constructor loads long term resources that belong to this executive. It is called when necessary.
+--//	@data 	[table]		optional data for setting up executive.
 
-function ExecutiveFactory:constructor() end 
+function ExecutiveFactory:constructor(data) end 
 
 --//	The detructor frees long term resources that belong to this executive.
+--//	@data 	[table]		optional data for setting up executive.
 
-function ExecutiveFactory:destructor() end 
+function ExecutiveFactory:destructor(data) end 
 
 --//	The clean() method allows garbage collection. If an app is running low on memory, it can call this on all scenes but the current one.
 --//	It calls the destructor to free up any resources. If they are needed again, they will be reloaded.
 
 function ExecutiveFactory:clean()
 	if self.m_constructorCalled then 															-- if the controller has been called
-		self:destructor() 																		-- call the destructor
+		self:destructor(self.m_data) 															-- call the destructor
 		self.m_constructorCalled = nil  														-- null the pointer so it will be reloaded if needed.
 	end 
 end
@@ -147,15 +160,15 @@ function GameManagerClass:onMessage(sender,message) 												-- listen for FS
 	if message.transaction == "enter" then 															-- only interested in entering classes
 		local factory = self:getExecutive().e.objectManager:getFactoryInstance(message.state) 		-- was there a previous class.
 		if message.previousState == nil then  														-- if not, then go straight into the first state
-			factory:preOpen() 																		-- do pre-open to set up
-			factory:open() 																			-- and open to start.
+			factory:preOpen(factory.m_data) 														-- do pre-open to set up
+			factory:open(factory.m_data) 															-- and open to start.
 			Transition:execute("fade",self,nil,factory:getExecutive():getGroup(),300)				-- fade it in.
 			self.m_currentFactoryInstance = factory 												
 		else  																						-- we are transitioning from one state to another.
 			self.m_newStateInstance = 																-- get new factory instance
 						self:getExecutive().e.objectManager:getFactoryInstance(message.state)
-			self.m_newStateInstance:preOpen() 														-- pre-open it.
-			self.m_currentFactoryInstance:close() 													-- close the currently opening one
+			self.m_newStateInstance:preOpen(self.m_newStateInstance.m_data)							-- pre-open it.
+			self.m_currentFactoryInstance:close(self.m_currentFactoryInstance.m_data) 				-- close the currently opening one
 			self.m_managerLocked = true 															-- lock against changes.
 			self.m_newStateInstance:getExecutive():enableSystems(false) 							-- disable updates, etc.
 			self.m_currentFactoryInstance:getExecutive():enableSystems(false)
@@ -204,8 +217,8 @@ function GameManagerClass:transitionCompleted()
 	self.m_coverScreen:removeSelf() 																
 	self.m_newStateInstance:getExecutive():enableSystems(true) 										-- enable updates, etc.
 	self.m_currentFactoryInstance:getExecutive():enableSystems(true)
-	self.m_currentFactoryInstance:postClose() 														-- so, finally close out the old state.
-	self.m_newStateInstance:open()	 																-- and open the new one
+	self.m_currentFactoryInstance:postClose(self.m_currentFactoryInstance.m_data) 					-- so, finally close out the old state.
+	self.m_newStateInstance:open(self.m_newStateInstance.m_data)	 								-- and open the new one
 	self.m_currentFactoryInstance = self.m_newStateInstance  										-- set current instance to new instance
 	self.m_newStateInstance = nil 																	-- null out the new instance
 	self.m_managerLocked = false 																	-- and we can now change state.

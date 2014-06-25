@@ -314,7 +314,7 @@ end
 
 local TitleScreenFactory = ExecutiveFactory:new()
 
-function TitleScreenFactory:preOpen()
+function TitleScreenFactory:preOpen(data)
 	self.title = TitleScreen:new(self:getExecutive())
 	self.title:start()
 end 
@@ -325,7 +325,7 @@ end
 
 local GameFactory = ExecutiveFactory:new()
 
-function GameFactory:preOpen()																	-- before opening, create all the game objects
+function GameFactory:preOpen(data)																-- before opening, create all the game objects
 	local exec = self:getExecutive()
 	self.workObject = StartMessage:new(exec)  
 	local pipes = 3
