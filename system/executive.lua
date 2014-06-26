@@ -592,9 +592,11 @@ end
 
 --//	Name the current object as a reference in executive.e 
 --//	@name 			[string] 		Name to call it.
+--//	@return 		[object]		Self
 
 function ExecutiveBaseClass:name(name)
 	self.m_executive:nameObject(name,self)
+	return self
 end 
 
 --//	Get the current executive reference
