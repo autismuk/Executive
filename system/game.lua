@@ -187,7 +187,7 @@ function GameManagerClass:onMessage(sender,message) 												-- listen for FS
 			self.m_coverScreen:addEventListener("tap",self)
 		end
 	end
-	if system.getinfo("environment") == "simulator" then 											-- display memory usage on simulator
+	if system.getInfo("environment") == "simulator" then 											-- display memory usage on simulator
 		self:memory()
 	end
 end

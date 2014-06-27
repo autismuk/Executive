@@ -82,9 +82,7 @@ local ShortEmitter = Emitter:new()
 --//	@timeFrame [number]			Period of emitter life, if you don't want to use the duration parameter
 
 function ShortEmitter:constructor(info)
-	local timeFrame = info.time
-	if timeFrame == nil then timeFrame = self.emitterParams.duration * 1000 end  			-- if no time frame given, use the one in "duration"
-	self.timeFrame = timeFrame 																-- save the timeframe
+	self.timeFrame = info.time
 	Emitter.constructor(self,info)
 end 
 
