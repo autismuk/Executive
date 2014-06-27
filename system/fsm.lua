@@ -37,9 +37,14 @@ end
 
 --//	Start an FSM, validating it first
 --//	@override 	[string]	Optional override for start state.
+--//	@attachedData [table]	Data provided for the state event.
 --//	@return 	[FSM]		Self, allowing chaining.
 
-function FSM:start(override)
+function FSM:start(override,attachedData)
+	if attachedData == nil and type(override) == "table" then 									-- one single table parameter provided ?
+		attachedData = override 																-- then that is the attached data, use the default start state.
+		override = nil 
+	end 
 	assert(not self.fsmStarted,"Cannot restart fsm")											-- can't start it twice
 	self.fsmStarted = true 																		-- mark it started
 	for key,value in pairs(self.fsm) do  														-- work through all the states
@@ -51,8 +56,9 @@ function FSM:start(override)
 		end 
 	end
 	self.current = override or self.current 													-- work out the first state.
+	attachedData = attachedData or {} 															-- default empty table for attached data.
 	assert(self.fsm[self.current] ~= nil,"Missing first state " .. self.current) 				-- check the first state actually exists.
-	self:announce("enter",self.current,nil,nil) 												-- announce entering first state.
+	self:announce("enter",self.current,nil,nil,attachedData) 									-- announce entering first state.
 	return self 																				-- allow chaining.
 end 
 
@@ -74,16 +80,17 @@ end
 --//	@state 			[string]		state leaving or entering
 --//	@lastState 		[string] 		last state, if entering
 --//	@data 			[table] 		associated data from the fsm
+--//	@attachedData 	[table] 		Data passed in either start or event.
 
-function FSM:announce(transaction,state,lastState,data)
+function FSM:announce(transaction,state,lastState,data,attachedData)
 	self:sendMessage(self.fsm.listeners,														-- tell all listener(s) what is being done.
-						{ transaction = transaction, state = state, data = data or {}, previousState = lastState })
+						{ transaction = transaction, state = state, data = data or {}, previousState = lastState, eventData = attachedData or {}})
 end
 
 --// 	Send an event to the FSM, causing a possible change of state.
 --//	@event 			[string]		event occurring
 
-function FSM:event(event)
+function FSM:event(event,attachedData)
 	assert(self.fsmStarted,"FSM has not been started")											-- check the FSM has been started.
 	event = event:lower() 																		-- case independent
 	local switch = self.fsm[self.current][event] 												-- get the the switch record
@@ -91,7 +98,7 @@ function FSM:event(event)
 	self:announce("leave",self.current)															-- announce leaving a state
 	local last = self.current 																	-- remember last state
 	self.current = switch.target 																-- make the current state correct.
-	self:announce("enter",self.current,last,switch) 											-- announce entering state
+	self:announce("enter",self.current,last,switch,attachedData) 								-- announce entering state
 end 
 
 --//	Get the current state

@@ -155,20 +155,21 @@ end
 --//	@message 	[message]			executive message describing fsm state changes.
 
 function GameManagerClass:onMessage(sender,message) 												-- listen for FSM Changes
-	--print("FSM Message : ",message.transaction,message.state,message.previousState,message.data.target)
+	-- print("FSM Message : ",message.transaction,message.state,message.previousState,message.data.target,message.eventData.testData)
+	local attached = message.eventData or {} 														-- data sent with transition event.
 	assert(not self.m_managerLocked,"Sending state changes during transition to ",message.state) 	-- cannot state change in a transition.
 	if message.transaction == "enter" then 															-- only interested in entering classes
 		local factory = self:getExecutive().e.objectManager:getFactoryInstance(message.state) 		-- was there a previous class.
 		if message.previousState == nil then  														-- if not, then go straight into the first state
-			factory:preOpen(factory.m_data) 														-- do pre-open to set up
-			factory:open(factory.m_data) 															-- and open to start.
+			factory:preOpen(factory.m_data,attached) 												-- do pre-open to set up
+			factory:open(factory.m_data,attached) 													-- and open to start.
 			Transition:execute("fade",self,nil,factory:getExecutive():getGroup(),300)				-- fade it in.
 			self.m_currentFactoryInstance = factory 												
 		else  																						-- we are transitioning from one state to another.
 			self.m_newStateInstance = 																-- get new factory instance
 						self:getExecutive().e.objectManager:getFactoryInstance(message.state)
-			self.m_newStateInstance:preOpen(self.m_newStateInstance.m_data)							-- pre-open it.
-			self.m_currentFactoryInstance:close(self.m_currentFactoryInstance.m_data) 				-- close the currently opening one
+			self.m_newStateInstance:preOpen(self.m_newStateInstance.m_data,attached)				-- pre-open it.
+			self.m_currentFactoryInstance:close(self.m_currentFactoryInstance.m_data,{}) 			-- close the currently opening one
 			self.m_managerLocked = true 															-- lock against changes.
 			self.m_newStateInstance:getExecutive():enableSystems(false) 							-- disable updates, etc.
 			self.m_currentFactoryInstance:getExecutive():enableSystems(false)
@@ -219,8 +220,8 @@ function GameManagerClass:transitionCompleted()
 	self.m_coverScreen:removeSelf() 																
 	self.m_newStateInstance:getExecutive():enableSystems(true) 										-- enable updates, etc.
 	self.m_currentFactoryInstance:getExecutive():enableSystems(true)
-	self.m_currentFactoryInstance:postClose(self.m_currentFactoryInstance.m_data) 					-- so, finally close out the old state.
-	self.m_newStateInstance:open(self.m_newStateInstance.m_data)	 								-- and open the new one
+	self.m_currentFactoryInstance:postClose(self.m_currentFactoryInstance.m_data,{}) 				-- so, finally close out the old state.
+	self.m_newStateInstance:open(self.m_newStateInstance.m_data,{})	 								-- and open the new one
 	self.m_currentFactoryInstance = self.m_newStateInstance  										-- set current instance to new instance
 	self.m_newStateInstance = nil 																	-- null out the new instance
 	self.m_managerLocked = false 																	-- and we can now change state.
@@ -244,9 +245,10 @@ end
 
 --//	Start the game.
 --//	@overrideState [string]		State to go to first, can override that in the FSM for debugging.
+--//	@attachedData  [table] 		Attached data.
 
-function Game:start(overrideState)
-	self.e.fsm:start(overrideState) 																-- start the fsm.
+function Game:start(overrideState,attachedData)
+	self.e.fsm:start(overrideState,attachedData) 														-- start the fsm.
 end 
 
 --//	Add a new state to the Game's FSM. Each FSM state has an associated executiveFactory object which manages its executive class.
@@ -268,11 +270,12 @@ end
 
 --//	Apply an event to the Game's FSM.
 --//	@eventName 	[string] 	Event name to apply.
+--//	@attachedData  [table] 	Attached data. (optional)
 
-function Game:event(eventName) 
-	self.e.fsm:event(eventName) 																	-- switch to a new state, probably.
+function Game:event(eventName,attachedData) 
+	self.e.fsm:event(eventName,attachedData) 														-- switch to a new state, probably.
 end 
 
 _G.Game = Game:new({}) 																				-- make a global instance.
 
-return ExecutiveFactory 																		-- returns the executivefactory base class.
+return ExecutiveFactory 																			-- returns the executivefactory base class.

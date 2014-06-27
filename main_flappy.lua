@@ -72,7 +72,7 @@ function EndMessage:constructor()
 end 
 
 function EndMessage:onTimer()
-	Game:event("gameover")
+	Game:event("gameover",{ testData = 42 })
 end 
 
 function EndMessage:destructor()
@@ -301,7 +301,6 @@ end
 
 function TitleScreen:start()
 	self.title:addEventListener( "tap",self)
-	--timer.performWithDelay( 2000, function() Game:event("play") end)
 end 
 
 function TitleScreen:tap(e)
@@ -314,7 +313,7 @@ end
 
 local TitleScreenFactory = ExecutiveFactory:new()
 
-function TitleScreenFactory:preOpen(data)
+function TitleScreenFactory:preOpen(data,edata)
 	self.title = TitleScreen:new(self:getExecutive())
 	self.title:start()
 end 
@@ -325,7 +324,7 @@ end
 
 local GameFactory = ExecutiveFactory:new()
 
-function GameFactory:preOpen(data)																-- before opening, create all the game objects
+function GameFactory:preOpen(data,edata)														-- before opening, create all the game objects
 	local exec = self:getExecutive()
 	self.workObject = StartMessage:new(exec)  
 	local pipes = 3

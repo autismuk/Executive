@@ -34,6 +34,7 @@
 <a name="Executive_decorateMixinObject"></a>
 <a name="Executive_delete"></a>
 <a name="Executive_detach"></a>
+<a name="Executive_enableSystems"></a>
 <a name="Executive_enterFrame"></a>
 <h2>enterFrame(eventData)</h2>
 <table>
@@ -91,7 +92,16 @@
 <hr><h1>ExecutiveBaseClass</h1>
 <p><h3>Extends Base</h3></p>
 <p></p>
-<p>Methods : <a href="#ExecutiveBaseClass_addRepeatingTimer"/>addRepeatingTimer</a>,<a href="#ExecutiveBaseClass_addSingleTimer"/>addSingleTimer</a>,<a href="#ExecutiveBaseClass_addTimer"/>addTimer</a>,<a href="#ExecutiveBaseClass_constructor"/>constructor</a>,<a href="#ExecutiveBaseClass_delete"/>delete</a>,<a href="#ExecutiveBaseClass_destructor"/>destructor</a>,<a href="#ExecutiveBaseClass_getExecutive"/>getExecutive</a>,<a href="#ExecutiveBaseClass_insert"/>insert</a>,<a href="#ExecutiveBaseClass_isAlive"/>isAlive</a>,<a href="#ExecutiveBaseClass_name"/>name</a>,<a href="#ExecutiveBaseClass_query"/>query</a>,<a href="#ExecutiveBaseClass_removeTimer"/>removeTimer</a>,<a href="#ExecutiveBaseClass_sendMessage"/>sendMessage</a>,<a href="#ExecutiveBaseClass_tag"/>tag</a></p><hr><a name="ExecutiveBaseClass_(constructor)"></a>
+<p>Methods : <a href="#ExecutiveBaseClass_addLibraryObject"/>addLibraryObject</a>,<a href="#ExecutiveBaseClass_addRepeatingTimer"/>addRepeatingTimer</a>,<a href="#ExecutiveBaseClass_addSingleTimer"/>addSingleTimer</a>,<a href="#ExecutiveBaseClass_addTimer"/>addTimer</a>,<a href="#ExecutiveBaseClass_constructor"/>constructor</a>,<a href="#ExecutiveBaseClass_delete"/>delete</a>,<a href="#ExecutiveBaseClass_destructor"/>destructor</a>,<a href="#ExecutiveBaseClass_getExecutive"/>getExecutive</a>,<a href="#ExecutiveBaseClass_insert"/>insert</a>,<a href="#ExecutiveBaseClass_isAlive"/>isAlive</a>,<a href="#ExecutiveBaseClass_name"/>name</a>,<a href="#ExecutiveBaseClass_query"/>query</a>,<a href="#ExecutiveBaseClass_removeTimer"/>removeTimer</a>,<a href="#ExecutiveBaseClass_sendMessage"/>sendMessage</a>,<a href="#ExecutiveBaseClass_tag"/>tag</a></p><hr><a name="ExecutiveBaseClass_(constructor)"></a>
+<a name="ExecutiveBaseClass_addLibraryObject"></a>
+<h2>addLibraryObject(library,element,data)</h2>
+<table>
+<tr><td>library</td><td>string</td><td>LUA library to use (e.g. utils.controller)</td></tr>
+<tr><td>element</td><td>string</td><td>Element with in library (optional)</td></tr>
+<tr><td>data</td><td>table</td><td>Data to use in constructor (optional)</td></tr>
+<tr><td>return</td><td>object</td><td>Library object instance.</td></tr>
+</table>
+<p>Add a library defined object. The library should return the class prototype or a table of prototypes (if element is used) An instance of this class is created using the supplied constructor data, it is added as a mixin object.</p>
 <a name="ExecutiveBaseClass_addRepeatingTimer"></a>
 <h2>addRepeatingTimer(delay,tag,target)</h2>
 <table>
@@ -154,6 +164,7 @@
 <h2>name(name)</h2>
 <table>
 <tr><td>name</td><td>string</td><td>Name to call it.</td></tr>
+<tr><td>return</td><td>object</td><td>Self</td></tr>
 </table>
 <p>Name the current object as a reference in executive.e</p>
 <a name="ExecutiveBaseClass_query"></a>
@@ -187,17 +198,32 @@
 <hr><h1>ExecutiveFactory</h1>
 <p><h3>Extends Base</h3></p>
 <p>This is the base class for the executive factory, which is a factory class which creates and manages executives, each executive being a 'scene' in the game.</p>
-<p>Methods : <a href="#ExecutiveFactory_clean"/>clean</a>,<a href="#ExecutiveFactory_close"/>close</a>,<a href="#ExecutiveFactory_constructor"/>constructor</a>,<a href="#ExecutiveFactory_destructor"/>destructor</a>,<a href="#ExecutiveFactory_getExecutive"/>getExecutive</a>,<a href="#ExecutiveFactory_instantiate"/>instantiate</a>,<a href="#ExecutiveFactory_open"/>open</a>,<a href="#ExecutiveFactory_postClose"/>postClose</a>,<a href="#ExecutiveFactory_preOpen"/>preOpen</a></p><hr><a name="ExecutiveFactory_clean"></a>
+<p>Methods : <a href="#ExecutiveFactory_(constructor)"/>(constructor)</a>,<a href="#ExecutiveFactory_clean"/>clean</a>,<a href="#ExecutiveFactory_close"/>close</a>,<a href="#ExecutiveFactory_constructor"/>constructor</a>,<a href="#ExecutiveFactory_destructor"/>destructor</a>,<a href="#ExecutiveFactory_getExecutive"/>getExecutive</a>,<a href="#ExecutiveFactory_instantiate"/>instantiate</a>,<a href="#ExecutiveFactory_open"/>open</a>,<a href="#ExecutiveFactory_postClose"/>postClose</a>,<a href="#ExecutiveFactory_preOpen"/>preOpen</a></p><hr><a name="ExecutiveFactory_(constructor)"></a>
+<h2>(constructor)(data)</h2>
+<table>
+<tr><td>data</td><td>table</td><td>optional data for setting up executive.</td></tr>
+</table>
+<p>Constructor</p>
+<a name="ExecutiveFactory_clean"></a>
 <h2>clean()</h2>
 <p>The clean() method allows garbage collection. If an app is running low on memory, it can call this on all scenes but the current one. It calls the destructor to free up any resources. If they are needed again, they will be reloaded.</p>
 <a name="ExecutiveFactory_close"></a>
-<h2>close()</h2>
+<h2>close(data)</h2>
+<table>
+<tr><td>data</td><td>table</td><td>optional data for setting up executive.</td></tr>
+</table>
 <p>Close phase. When the running executive has decided that this scene is over, and it is going to end, this method will be called once the Game's FSM has decided to switch to another scene. It normally should not be touched - it is usually the responsibility of the executive to stop itself from running.</p>
 <a name="ExecutiveFactory_constructor"></a>
-<h2>constructor()</h2>
+<h2>constructor(data)</h2>
+<table>
+<tr><td>data</td><td>table</td><td>optional data for setting up executive.</td></tr>
+</table>
 <p>The constructor loads long term resources that belong to this executive. It is called when necessary.</p>
 <a name="ExecutiveFactory_destructor"></a>
-<h2>destructor()</h2>
+<h2>destructor(data)</h2>
+<table>
+<tr><td>data</td><td>table</td><td>optional data for setting up executive.</td></tr>
+</table>
 <p>The detructor frees long term resources that belong to this executive.</p>
 <a name="ExecutiveFactory_getExecutive"></a>
 <h2>getExecutive()</h2>
@@ -209,13 +235,22 @@
 <h2>instantiate()</h2>
 <p>First call the constructor for long term resources if this hasn't already been done. Check to see if the object has been instantiated, if not create the executive</p>
 <a name="ExecutiveFactory_open"></a>
-<h2>open()</h2>
+<h2>open(data)</h2>
+<table>
+<tr><td>data</td><td>table</td><td>optional data for setting up executive.</td></tr>
+</table>
 <p>Open phase. This is called after the transition to this scene has finished, and should start the actual game.</p>
 <a name="ExecutiveFactory_postClose"></a>
-<h2>postClose()</h2>
+<h2>postClose(data)</h2>
+<table>
+<tr><td>data</td><td>table</td><td>optional data for setting up executive.</td></tr>
+</table>
 <p>This is called after the transition to the next screen has occurred, and should normally not be touched - it removes the executive object. thus removing all the attached objects.</p>
 <a name="ExecutiveFactory_preOpen"></a>
-<h2>preOpen()</h2>
+<h2>preOpen(data)</h2>
+<table>
+<tr><td>data</td><td>table</td><td>optional data for setting up executive.</td></tr>
+</table>
 <p>Pre-open phase. This method will be called when the scene is switched to, but before the transition has started. This should create objects but not activate them, so the game screen is up but not actually doing anything, so it can be transitioned in.</p>
 <a name="FSM"></a>
 <hr><h1>FSM</h1>
@@ -237,9 +272,10 @@
 <p>Create a new finite state machine.</p>
 <a name="FSM_destructor"></a>
 <a name="FSM_event"></a>
-<h2>event(event)</h2>
+<h2>event(event,attachedData)</h2>
 <table>
 <tr><td>event</td><td>string</td><td>event occurring</td></tr>
+<tr><td>attachedData</td><td></td><td></td></tr>
 </table>
 <p>Send an event to the FSM, causing a possible change of state.</p>
 <a name="FSM_getState"></a>
@@ -249,9 +285,10 @@
 </table>
 <p>Get the current state</p>
 <a name="FSM_start"></a>
-<h2>start(override)</h2>
+<h2>start(override,attachedData)</h2>
 <table>
 <tr><td>override</td><td>string</td><td>Optional override for start state.</td></tr>
+<tr><td>attachedData</td><td>table</td><td>Data provided for the state event.</td></tr>
 <tr><td>return</td><td>FSM</td><td>Self, allowing chaining.</td></tr>
 </table>
 <p>Start an FSM, validating it first</p>
@@ -271,9 +308,10 @@
 </table>
 <p>Add a new state to the Game's FSM. Each FSM state has an associated executiveFactory object which manages its executive class.</p>
 <a name="Game_event"></a>
-<h2>event(eventName)</h2>
+<h2>event(eventName,attachedData)</h2>
 <table>
 <tr><td>eventName</td><td>string</td><td>Event name to apply.</td></tr>
+<tr><td>attachedData</td><td>table</td><td>Attached data. (optional)</td></tr>
 </table>
 <p>Apply an event to the Game's FSM.</p>
 <a name="Game_getState"></a>
@@ -283,16 +321,17 @@
 </table>
 <p>Return the current state</p>
 <a name="Game_start"></a>
-<h2>start(overrideState)</h2>
+<h2>start(overrideState,attachedData)</h2>
 <table>
 <tr><td>overrideState</td><td>string</td><td>State to go to first, can override that in the FSM for debugging.</td></tr>
+<tr><td>attachedData</td><td>table</td><td>Attached data.</td></tr>
 </table>
 <p>Start the game.</p>
 <a name="GameManagerClass"></a>
 <hr><h1>GameManagerClass</h1>
 <p><h3>Extends ExecutiveBaseClass</h3></p>
 <p></p>
-<p>Methods : <a href="#ExecutiveBaseClass_addRepeatingTimer"/><i>addRepeatingTimer</i></a>,<a href="#ExecutiveBaseClass_addSingleTimer"/><i>addSingleTimer</i></a>,<a href="#ExecutiveBaseClass_addTimer"/><i>addTimer</i></a>,<a href="#GameManagerClass_constructor"/>constructor</a>,<a href="#ExecutiveBaseClass_delete"/><i>delete</i></a>,<a href="#ExecutiveBaseClass_destructor"/><i>destructor</i></a>,<a href="#ExecutiveBaseClass_getExecutive"/><i>getExecutive</i></a>,<a href="#ExecutiveBaseClass_insert"/><i>insert</i></a>,<a href="#ExecutiveBaseClass_isAlive"/><i>isAlive</i></a>,<a href="#GameManagerClass_memory"/>memory</a>,<a href="#ExecutiveBaseClass_name"/><i>name</i></a>,<a href="#GameManagerClass_onMessage"/>onMessage</a>,<a href="#ExecutiveBaseClass_query"/><i>query</i></a>,<a href="#ExecutiveBaseClass_removeTimer"/><i>removeTimer</i></a>,<a href="#ExecutiveBaseClass_sendMessage"/><i>sendMessage</i></a>,<a href="#ExecutiveBaseClass_tag"/><i>tag</i></a>,<a href="#GameManagerClass_transitionCompleted"/>transitionCompleted</a></p><hr><a name="GameManagerClass_constructor"></a>
+<p>Methods : <a href="#ExecutiveBaseClass_addLibraryObject"/><i>addLibraryObject</i></a>,<a href="#ExecutiveBaseClass_addRepeatingTimer"/><i>addRepeatingTimer</i></a>,<a href="#ExecutiveBaseClass_addSingleTimer"/><i>addSingleTimer</i></a>,<a href="#ExecutiveBaseClass_addTimer"/><i>addTimer</i></a>,<a href="#GameManagerClass_constructor"/>constructor</a>,<a href="#ExecutiveBaseClass_delete"/><i>delete</i></a>,<a href="#ExecutiveBaseClass_destructor"/><i>destructor</i></a>,<a href="#ExecutiveBaseClass_getExecutive"/><i>getExecutive</i></a>,<a href="#ExecutiveBaseClass_insert"/><i>insert</i></a>,<a href="#ExecutiveBaseClass_isAlive"/><i>isAlive</i></a>,<a href="#GameManagerClass_memory"/>memory</a>,<a href="#ExecutiveBaseClass_name"/><i>name</i></a>,<a href="#GameManagerClass_onMessage"/>onMessage</a>,<a href="#ExecutiveBaseClass_query"/><i>query</i></a>,<a href="#ExecutiveBaseClass_removeTimer"/><i>removeTimer</i></a>,<a href="#ExecutiveBaseClass_sendMessage"/><i>sendMessage</i></a>,<a href="#ExecutiveBaseClass_tag"/><i>tag</i></a>,<a href="#GameManagerClass_tap"/>tap</a>,<a href="#GameManagerClass_touch"/>touch</a>,<a href="#GameManagerClass_transitionCompleted"/>transitionCompleted</a></p><hr><a name="GameManagerClass_constructor"></a>
 <h2>constructor(info)</h2>
 <table>
 <tr><td>info</td><td></td><td></td></tr>
@@ -308,6 +347,18 @@
 <tr><td>message</td><td>message</td><td>executive message describing fsm state changes.</td></tr>
 </table>
 <p>Game Manager message handler. Receives state changes from the game's FSM.</p>
+<a name="GameManagerClass_tap"></a>
+<h2>tap(e)</h2>
+<table>
+<tr><td>e</td><td></td><td></td></tr>
+</table>
+<p></p>
+<a name="GameManagerClass_touch"></a>
+<h2>touch(e)</h2>
+<table>
+<tr><td>e</td><td></td><td></td></tr>
+</table>
+<p></p>
 <a name="GameManagerClass_transitionCompleted"></a>
 <h2>transitionCompleted()</h2>
 <p>This method is called by the Transaction Manager library when a transaction is completed.</p>
@@ -319,7 +370,7 @@
 <hr><h1>ObjectManagerClass</h1>
 <p><h3>Extends ExecutiveBaseClass</h3></p>
 <p></p>
-<p>Methods : <a href="#ObjectManagerClass_addFactoryObject"/>addFactoryObject</a>,<a href="#ExecutiveBaseClass_addRepeatingTimer"/><i>addRepeatingTimer</i></a>,<a href="#ExecutiveBaseClass_addSingleTimer"/><i>addSingleTimer</i></a>,<a href="#ExecutiveBaseClass_addTimer"/><i>addTimer</i></a>,<a href="#ObjectManagerClass_constructor"/>constructor</a>,<a href="#ExecutiveBaseClass_delete"/><i>delete</i></a>,<a href="#ObjectManagerClass_destructor"/>destructor</a>,<a href="#ExecutiveBaseClass_getExecutive"/><i>getExecutive</i></a>,<a href="#ObjectManagerClass_getFactoryInstance"/>getFactoryInstance</a>,<a href="#ExecutiveBaseClass_insert"/><i>insert</i></a>,<a href="#ExecutiveBaseClass_isAlive"/><i>isAlive</i></a>,<a href="#ExecutiveBaseClass_name"/><i>name</i></a>,<a href="#ExecutiveBaseClass_query"/><i>query</i></a>,<a href="#ExecutiveBaseClass_removeTimer"/><i>removeTimer</i></a>,<a href="#ExecutiveBaseClass_sendMessage"/><i>sendMessage</i></a>,<a href="#ExecutiveBaseClass_tag"/><i>tag</i></a></p><hr><a name="ObjectManagerClass_addFactoryObject"></a>
+<p>Methods : <a href="#ObjectManagerClass_addFactoryObject"/>addFactoryObject</a>,<a href="#ExecutiveBaseClass_addLibraryObject"/><i>addLibraryObject</i></a>,<a href="#ExecutiveBaseClass_addRepeatingTimer"/><i>addRepeatingTimer</i></a>,<a href="#ExecutiveBaseClass_addSingleTimer"/><i>addSingleTimer</i></a>,<a href="#ExecutiveBaseClass_addTimer"/><i>addTimer</i></a>,<a href="#ObjectManagerClass_constructor"/>constructor</a>,<a href="#ExecutiveBaseClass_delete"/><i>delete</i></a>,<a href="#ObjectManagerClass_destructor"/>destructor</a>,<a href="#ExecutiveBaseClass_getExecutive"/><i>getExecutive</i></a>,<a href="#ObjectManagerClass_getFactoryInstance"/>getFactoryInstance</a>,<a href="#ExecutiveBaseClass_insert"/><i>insert</i></a>,<a href="#ExecutiveBaseClass_isAlive"/><i>isAlive</i></a>,<a href="#ExecutiveBaseClass_name"/><i>name</i></a>,<a href="#ExecutiveBaseClass_query"/><i>query</i></a>,<a href="#ExecutiveBaseClass_removeTimer"/><i>removeTimer</i></a>,<a href="#ExecutiveBaseClass_sendMessage"/><i>sendMessage</i></a>,<a href="#ExecutiveBaseClass_tag"/><i>tag</i></a></p><hr><a name="ObjectManagerClass_addFactoryObject"></a>
 <h2>addFactoryObject(state,factoryInstance)</h2>
 <table>
 <tr><td>state</td><td>string</td><td>Name of state</td></tr>
