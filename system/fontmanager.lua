@@ -3,7 +3,8 @@
 ---				Name : 		fontmanager.lua
 ---				Purpose :	Manage and Animate strings of bitmap fonts.
 ---				Created:	30 April 2014 (Reengineered 19th May 2014)
----				Author:		Paul Robson (paul@robsons.org.uk)
+---				Authors:	Paul Robson (paul@robsons.org.uk)
+---							Ingemar Bergmark.
 ---				License:	MIT
 ---
 --- ************************************************************************************************************************************************************************
@@ -11,6 +12,7 @@
 -- Standard OOP (with Constructor parameters added.)
 _G.Base =  _G.Base or { new = function(s,...) local o = { } setmetatable(o,s) s.__index = s o:initialise(...) return o end, initialise = function() end }
 
+require("config")
 
 --- ************************************************************************************************************************************************************************
 --// 	This class encapsulates a bitmap font, producing characters 'on demand'. Has a factory method for producing character images from that font (using imageSheets)
@@ -53,8 +55,10 @@ function BitmapFont:loadFont(fontName)
 	self.padding = { 0,0,0,0 } 																-- clear padding.
 
 	for l in source do 
-		local page,fileName = l:match('^%s*page%s*id%s*=%s*(%d+)%s*file%s*=%s*%"(.*)%"$') 	-- is it the page line, which tells us the file name ?
-		if page ~= nil then 																-- if so , use it for the file name.
+		local page = l:match('^%s*page%s*id%s*=%s*(%d+)%s*file%s*=%s*%"(.*)%"$') 		    -- get the page line
+		local fileName = fontName .. ".png" 												-- no need to add suffix as Corona will figure it out
+
+		if page ~= nil then 																-- check page.
 			assert(page == "0","We do not support font files with page > 0. If you have one contact the author")
 			imageFile = BitmapFont.fontDirectory .. "/" .. fileName 						-- not currently supporting multi page files, are there any ?
 		end
@@ -95,31 +99,39 @@ end
 --//	@return 	[string]		Path of font file.
 
 function BitmapFont:getFontFile(fontFile)
-	--// TODO: Work out scale, check if 4x, 3x 2x 1x exist and use them if they do.
 	--// TODO: Explain in docs what it actually does.
-	local scaleFactor = 1
-	if fontFile:match("%@%d+x$") == nil then 												-- if not enforcing the use of a font.
-		local deviceWidth = ( display.contentWidth - (display.screenOriginX * 2) ) / 		-- Corona's code to work out the scale
-																			display.contentScaleX
-		scaleFactor = math.floor( deviceWidth / display.contentWidth )
-		scaleFactor = math.max(scaleFactor,1) 												-- have a scale factor of at least 1.
-		while scaleFactor > 1 and self:getFileNameScalar(fontFile,scaleFactor) == nil do 	-- while scale > 1 and file not present
-				scaleFactor = scaleFactor - 1 												-- try previous file.
-		end
-	end
-	self.fontScalar = scaleFactor 															-- save the scale factor
-	return self:getFileNameScalar(fontFile,scaleFactor)										-- return the file.
+	self.fontScalar = 1 / display.contentScaleX  											-- save the scale factor
+	return self:getFileNameScalar(fontFile)													-- return the file.
 end 
+
+--//	Changes the directory where bitmap fonts are found.
+--//	@newDir [string] name of font directory
+
+function BitmapFont:setFontDirectory(newDir)
+	BitmapFont.fontDirectory = newDir
+end
 
 --//%	Create a full file name for a font scaled by a particular amount (so 2 => @2x etc.)
 --//	@fontFile 	[string] 		Base name of font file
---//	@fontScalar [number]		Possible scalar size 2,3,4 etc.
 --//	@return 	[string]		Path of font file.
 
-function BitmapFont:getFileNameScalar(fontFile,fontScalar)
-	if fontScalar > 1 then fontFile = fontFile .. "@" .. fontScalar .. "x" end 				-- if >1 then add @2x or whatever to the name
+function BitmapFont:getFileNameScalar(fontFile)
+	local selectedSuffix = ""																-- default suffix
+	local selectedScale = -1 																-- selected scale from config.lua (no guarantee that the
+																							-- order in the table is ascending)
+	
+	for configSuffix, configScale in pairs(application.content.imageSuffix or {}) do 		-- traverse through config.lua's imageSuffix table	
+		if (self.fontScalar >= configScale) and (configScale > selectedScale) then 			-- to get file suffix to use
+			selectedScale = configScale
+			selectedSuffix = configSuffix
+		end
+	end
+
+	fontFile = fontFile .. selectedSuffix
+	self.suffix = selectedSuffix 															-- save the selected suffix
+
 	return system.pathForFile(BitmapFont.fontDirectory .. "/" .. 							-- create full file path
-												fontFile..".fnt",system.ResourceDirectory)
+												fontFile .. ".fnt", system.ResourceDirectory)
 end 
 
 --//%	Calculates the font height of the loaded bitmap, which defines the base height of the font. This is used when scaling the bitmaps
@@ -231,12 +243,12 @@ function BitmapCharacter:initialise(fontName,character)
 	self.info = info.charData 																-- save the associated information. Note, we can only use width, height, xOffset, yOffset
 	self.basePhysicalHeight = info.fontHeight 												-- save the physical height of the bitmap.
 	self.actualHeight = info.fontHeight 													-- initially same size as the physical height.
-	self.padding = info.padding 															-- save padding
+	self.padding = info.padding or { 0,0,0,0 }												-- save padding
 	self.image.anchorX, self.image.anchorY = 0.5,0.5 										-- anchor at the middle of the display image.
 	self.tinting = nil 																		-- current default tinting.
 	if self.isDebug then 																	-- if you want it, create the debug rectangle.
 		self.debuggingRectangle = display.newRect(0,0,1,1)									-- moving it will update its location correctly.
-		self.debuggingRectangle:setStrokeColor(0,0.4,0) 									-- make it green, one width and transparent
+		self.debuggingRectangle:setStrokeColor(1,0,0) 									    -- make it red, one width 
 		self.debuggingRectangle.strokeWidth = 1
 		self.debuggingRectangle:setFillColor( 0,0,0,0 )
 		self.debuggingRectangle.anchorX,self.debuggingRectangle.anchorY = 0,0 				-- anchor at top left, position it with the bounding box.
@@ -544,6 +556,13 @@ BitmapString.startTintDef = "{" 															-- start and end markers for font
 BitmapString.endTintDef = "}"
 BitmapString.DEFAULT_SIZE = -1 																-- use the built in font size.
 
+--//	enable bounding box for characters (red) and string (green)
+--//	@flag [boolean] true/false
+function BitmapString:showBoundingBox(flag)
+	BitmapString.isDebug = flag
+	BitmapCharacter.isDebug = flag
+end
+
 --// 	We have a replacement constructor, which decorates a Corona Group with the BitmapString's methods. Note that you cannot therefore subclass
 --//	BitmapString as normal, because it is a mixin. 
 
@@ -586,7 +605,7 @@ function BitmapString:initialise(fontName,fontSize)
 	self.creationTime = system.getTimer() 													-- remember the start time.
 	if BitmapString.isDebug then 
 		self.debuggingRectangle = display.newRect(0,0,1,1)									-- moving it will update its location correctly.
-		self.debuggingRectangle:setStrokeColor(0.4,0.4,0) 									-- make it green, one width and transparent
+		self.debuggingRectangle:setStrokeColor(0,1,0) 									    -- make it green, one width 
 		self.debuggingRectangle.strokeWidth = 1
 		self.debuggingRectangle:setFillColor( 0,0,0,0 )
 		self.debuggingRectangle.anchorX,self.debuggingRectangle.anchorY = 0,0 				-- anchor at top left, position it with the bounding box.
@@ -633,8 +652,9 @@ BitmapString.remove = BitmapString.removeSelf 												-- synonym remove for 
 
 function BitmapString:show()
 	self.internalXAnchor,self.internalYAnchor = self.anchorX or 0.5,self.anchorY or 0.5 	-- get anchor X, anchor Y
-	self.currText = self.text .. "!" 														-- this means the change check will fail :)
-	self:setText(self.text)																	-- set the text
+	local text = self.currText 																-- get current text
+	self.currText = text .. "!" 															-- this means the change check will fail :)
+	self:setText(text)																		-- set the text back so it reformats.
 	return self
 end
 
@@ -1417,5 +1437,7 @@ return { BitmapString = BitmapString, Modifiers = Modifiers, FontManager = Bitma
 	01/06/14 	Auto-selection of differing scales of png to allow for different device resolutions
 	01/06/14 	Reads padding from font file.
 	02/06/14 	Implemented DEFAULT_SIZE
-
+	05/07/14 	Ingemar Bergmark fixed the way it handles multi resolution pngs to work with the Corona system.
+				Fixed padding bug with image characters
+				Stopped crashing when no imageSuffix in config.
 --]]
